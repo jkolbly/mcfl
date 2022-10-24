@@ -1,0 +1,17 @@
+/*
+ * Simple program to kill everyone at (0,0) every tick
+ */
+
+mcfunction tick() -> void {
+  // Testing stuff
+  int a;
+  a = 1;
+  int dx = add(a, 1); // some useless math
+  int dz = 7 - 5;
+  command.kill(@e[x=-1,z=-1,dx=dx,dz=dz]);
+}
+
+function add(int a, int b) -> int {
+  return a + b;
+  return 1;
+}
