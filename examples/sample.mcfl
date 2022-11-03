@@ -2,7 +2,7 @@
  * Simple program to kill everyone at (0,0) every tick
  */
 
-mcfunction tick() -> void {
+mcfunction tick() {
   // Testing stuff
   int a;
   a = 1;

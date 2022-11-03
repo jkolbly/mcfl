@@ -1,0 +1,42 @@
+program = { SOI ~ function+ ~ EOI }
+
+function = { "function" ~ name ~ variable_declaration_list ~ ("->" ~ var_type)? ~ block }
+
+mcfunction = { "mcfunction" ~ name ~ variable_declaration_list ~ block }
+
+mcfunction_type = { "mcfunction" }
+function_type = { "function" }
+
+name = @{ (ASCII_ALPHA | "_")+ ~ (ASCII_ALPHANUMERIC | "_")* }
+
+variable_declaration_list = { "(" ~ (variable_declaration ~ ("," ~ variable_declaration)*)? ~ ")" }
+variable_declaration = { var_type ~ name }
+
+var_type = { int_type }
+int_type = { "int" }
+
+block = { "{" ~ statement* ~ "}" }
+
+statement = _{ (assignment | variable_declaration) ~ ";" }
+
+assignment = { assignable ~ assignment_operator ~ expression }
+assignable = _{ variable_declaration | name }
+assignment_operator = _{ equals_operator }
+equals_operator = _{ "=" }
+
+binary_operation = { binary_operand ~ (binary_operator ~ binary_operand)* }
+binary_operand = _{ parenthetical_expression | name | number_literal }
+binary_operator = _{ add | subtract | multiply | divide | modulo }
+add = { "+" }
+subtract = { "+" }
+multiply = { "*" }
+divide = { "/" }
+modulo = { "%" }
+
+expression = _{ binary_operation | parenthetical_expression }
+parenthetical_expression = _{ "(" ~ expression ~ ")" }
+
+number_literal = ${ "-"? ~ ASCII_DIGIT+ }
+
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+COMMENT = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" | "//" ~ (!"\n" ~ ANY)* }
