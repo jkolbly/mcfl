@@ -1,4 +1,6 @@
+use crate::ast::StringContext;
 use crate::parse::Rule;
+use crate::program::{FunctionID, Variable};
 use crate::tree::NodeId;
 use pest::error::Error;
 
@@ -6,39 +8,98 @@ use pest::error::Error;
 pub enum TreeError {
     NodeNotFound { node_id: NodeId },
     RootNotFound,
+    ExpectedOnlyChild { parent_id: NodeId, child_num: usize },
+    ChildNotFound { parent_id: NodeId },
+    ParentNotFound { child_id: NodeId },
+    MismatchedTreeAndNodeID { node_id: NodeId, tree_id: usize },
 }
 
 pub enum CompileError {
-    ParseError { err: Error<Rule> },
-    TreeError { err: TreeError },
+    ParseError {
+        err: Error<Rule>,
+    },
+    TreeError {
+        err: TreeError,
+    },
+    IOError {
+        err: std::io::Error,
+    },
     NoEntryPoint {},
-    TickParams {},
-    TickNotMCFunction {},
-    MCFunctionReturnType {},
-    CompilingNonFunction {},
     CompilingNonMCFunction {},
+    VariableAlreadyDeclared {
+        var: Variable,
+        context: StringContext,
+    },
+    VariableNotDeclared {
+        var_name: String,
+        context: StringContext,
+    },
+    UnknownFunction {
+        name: String,
+        context: StringContext,
+    },
+    UnknownFunctionID {
+        id: FunctionID,
+    },
+    AttemptedIllegalReturn {
+        context: StringContext,
+    },
+    MismatchedParamCount {
+        func_name: String,
+        expected: usize,
+        received: usize,
+        context: StringContext,
+    },
 }
 
 impl std::fmt::Debug for CompileError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut include_pos = |ctx: &StringContext, msg: &str| write!(f, "{} on {}", msg, ctx);
         match self {
             Self::ParseError { err } => write!(f, "ParseError: {:?}", err),
             Self::TreeError { err } => write!(f, "TreeError: {:?}", err),
+            Self::IOError { err } => write!(f, "I/O error: {:?}", err),
             Self::NoEntryPoint {} => {
                 write!(f, "No entrypoint ('tick' or 'startup' function) found")
             }
-            Self::TickParams {} => write!(f, "'tick' function cannot have any parameters"),
-            Self::TickNotMCFunction {} => write!(f, "'tick' function must be an mcfunction"),
-            Self::MCFunctionReturnType {} => write!(f, "mcfunction cannot have a return type"),
-            Self::CompilingNonFunction {} => {
-                write!(f, "'compile_function' called on non-function node")
-            }
             Self::CompilingNonMCFunction {} => {
-                write!(
-                    f,
-                    "'compile_function' called on function that isn't an mcfunction"
-                )
+                write!(f, "'compile_mcfunction' called on non-mcfunction node")
             }
+            Self::VariableAlreadyDeclared { var, context } => include_pos(
+                context,
+                &format!("Variable {:?} has already been declared", var.get_name()),
+            ),
+            Self::VariableNotDeclared { var_name, context } => include_pos(
+                context,
+                &format!("Variable {:?} has not been declared", var_name),
+            ),
+            Self::UnknownFunction { name, context } => include_pos(
+                context,
+                &format!(
+                    "Tried to access a non-existent function within a program with name {}",
+                    name
+                ),
+            ),
+            Self::UnknownFunctionID { id } => write!(
+                f,
+                "Tried to access a non-existent function with ID {:?}",
+                id
+            ),
+            Self::AttemptedIllegalReturn { context } => {
+                include_pos(context, "Attempted to return outside of a function")
+            }
+            Self::MismatchedParamCount {
+                func_name,
+                expected,
+                received,
+                context,
+            } => include_pos(
+                context,
+                &format!(
+                    "Function {} takes {} arguments but {} were given",
+                    func_name, expected, received
+                ),
+            ),
         }
     }
 }
@@ -52,5 +113,11 @@ impl From<TreeError> for CompileError {
 impl From<Error<Rule>> for CompileError {
     fn from(err: Error<Rule>) -> Self {
         CompileError::ParseError { err }
+    }
+}
+
+impl From<std::io::Error> for CompileError {
+    fn from(err: std::io::Error) -> Self {
+        CompileError::IOError { err }
     }
 }

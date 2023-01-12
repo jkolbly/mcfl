@@ -1,12 +1,16 @@
 use std::{collections::HashMap, fmt::Debug};
 
-use crate::error::TreeError;
+use crate::{
+    error::TreeError,
+    id_tracker::{self, ID_TRACKER},
+};
 
 /// Generic tree struct that stores a vector of nodes which can be accessed with their ID's.
 pub struct Tree<T> {
     nodes: HashMap<NodeId, Node<T>>,
     next_index: usize,
     root: Option<NodeId>,
+    id: usize,
 }
 
 impl<T> Default for Tree<T> {
@@ -22,6 +26,7 @@ impl<T> Tree<T> {
             nodes: HashMap::new(),
             next_index: 0,
             root: None,
+            id: ID_TRACKER.lock().unwrap().get_id(),
         }
     }
 
@@ -29,6 +34,7 @@ impl<T> Tree<T> {
     pub fn new_node(&mut self, data: T) -> NodeId {
         let new_id = NodeId {
             id: self.next_index,
+            tree_id: self.id,
         };
         self.next_index += 1;
 
@@ -53,8 +59,22 @@ impl<T> Tree<T> {
 
     /// Get the data for the node specified by `id` or error if node doesn't exist
     pub fn get_node(&self, id: NodeId) -> Result<&T, TreeError> {
+        if id.tree_id != self.id {
+            return Err(TreeError::MismatchedTreeAndNodeID {
+                node_id: id,
+                tree_id: self.id,
+            });
+        }
         if let Some(node) = self.nodes.get(&id) {
             Ok(&node.data)
+        } else {
+            Err(TreeError::NodeNotFound { node_id: id })
+        }
+    }
+
+    pub fn get_node_mut(&mut self, id: NodeId) -> Result<&mut T, TreeError> {
+        if let Some(node) = self.nodes.get_mut(&id) {
+            Ok(&mut node.data)
         } else {
             Err(TreeError::NodeNotFound { node_id: id })
         }
@@ -103,6 +123,42 @@ impl<T> Tree<T> {
         match self.root {
             Some(id) => Ok(id),
             None => Err(TreeError::RootNotFound),
+        }
+    }
+
+    /// If `child` has a parent, return its parent.
+    pub fn get_parent(&self, child: NodeId) -> Result<NodeId, TreeError> {
+        self.get_treenode(child)?
+            .parent
+            .ok_or(TreeError::ParentNotFound { child_id: child })
+    }
+
+    /// If `parent` has only one child, return that child. Otherwise, return an error
+    pub fn get_only_child(&self, parent: NodeId) -> Result<NodeId, TreeError> {
+        let children = self.get_children(parent)?;
+        if children.len() == 1 {
+            Ok(*children.first().unwrap())
+        } else {
+            Err(TreeError::ExpectedOnlyChild {
+                parent_id: parent,
+                child_num: children.len(),
+            })
+        }
+    }
+
+    /// If `parent` has children, return the first child. Otherwise, return an error
+    pub fn get_first_child(&self, parent: NodeId) -> Result<NodeId, TreeError> {
+        match self.get_children(parent)?.first() {
+            Some(id) => Ok(*id),
+            None => Err(TreeError::ChildNotFound { parent_id: parent }),
+        }
+    }
+
+    /// If `parent` has children, return the last child. Otherwise, return an error
+    pub fn get_last_child(&self, parent: NodeId) -> Result<NodeId, TreeError> {
+        match self.get_children(parent)?.last() {
+            Some(id) => Ok(*id),
+            None => Err(TreeError::ChildNotFound { parent_id: parent }),
         }
     }
 
@@ -248,4 +304,5 @@ struct Node<T> {
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
 pub struct NodeId {
     id: usize,
+    tree_id: usize,
 }

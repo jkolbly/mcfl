@@ -1,17 +1,72 @@
 use std::collections::HashMap;
-use std::fmt::Display;
+use std::fs::{create_dir_all, remove_dir_all, File};
+use std::io::Write;
+use std::path::{Path, PathBuf};
+
+use serde_json::json;
+
+use crate::error::CompileError;
+use crate::mcfunction::MCFunction;
 
 pub struct DataPack {
     pub pub_namespace: NameSpace,
-    pub mc_namespace: NameSpace,
+    pub private_namespace: NameSpace,
+    description: String,
+    name: String,
 }
 
 impl DataPack {
-    pub fn new() -> DataPack {
+    pub fn new(name: &str, private_namespace_name: &str) -> DataPack {
         DataPack {
-            pub_namespace: NameSpace::new("pub"),
-            mc_namespace: NameSpace::new("minecraft"),
+            pub_namespace: NameSpace::new(name),
+            private_namespace: NameSpace::new(private_namespace_name),
+            description: "Compiled from MCFL (Minecraft Function Language)".to_owned(),
+            name: name.to_owned(),
         }
+    }
+
+    pub fn save(&self, dest_dir: &Path) -> Result<(), CompileError> {
+        let path = &dest_dir.join(&self.name);
+
+        if path.exists() {
+            remove_dir_all(path)?;
+        }
+        create_dir_all(path)?;
+
+        let mcmeta_path = path.join("pack.mcmeta");
+        let mcmeta_content = json!({
+            "pack": {
+                "pack_format": 4,
+                "description": self.description
+            }
+        });
+        let mut mcmeta = File::create(mcmeta_path)?;
+        mcmeta.write_all(mcmeta_content.to_string().as_bytes())?;
+
+        let tags_path = path
+            .join("data")
+            .join("minecraft")
+            .join("tags")
+            .join("functions");
+        create_dir_all(&tags_path)?;
+        if self.pub_namespace.functions.contains_key("tick") {
+            let tick_path = tags_path.join("tick.json");
+            let tick_content = json!({ "values": [format!("{}:tick", self.pub_namespace.id)] });
+            let mut tick = File::create(tick_path)?;
+            tick.write_all(tick_content.to_string().as_bytes())?;
+        }
+        if self.pub_namespace.functions.contains_key("startup") {
+            let startup_path = tags_path.join("load.json");
+            let startup_content =
+                json!({ "values": [format!("{}:startup", self.pub_namespace.id)] });
+            let mut startup = File::create(startup_path)?;
+            startup.write_all(startup_content.to_string().as_bytes())?;
+        }
+
+        self.pub_namespace.save(path)?;
+        self.private_namespace.save(path)?;
+
+        Ok(())
     }
 }
 
@@ -27,170 +82,19 @@ impl NameSpace {
             functions: HashMap::new(),
         }
     }
-}
 
-pub struct MCFunction {
-    pub filename: String,
-    pub commands: Vec<Command>,
-}
+    pub fn save(&self, root: &Path) -> Result<(), CompileError> {
+        if !self.functions.is_empty() {
+            let func_root_path = root.join("data").join(&self.id).join("functions");
+            create_dir_all(&func_root_path)?;
 
-impl MCFunction {
-    pub fn new(name: &str) -> MCFunction {
-        MCFunction {
-            filename: name.to_owned(),
-            commands: vec![],
+            for (name, func) in &self.functions {
+                let func_path = func_root_path.join(format!("{}.mcfunction", name));
+                let mut func_file = File::create(func_path)?;
+                func_file.write_all(format!("{}", func).as_bytes())?;
+            }
         }
-    }
-}
 
-impl Display for MCFunction {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for command in &self.commands {
-            f.write_fmt(format_args!("{}\n", command))?;
-        }
-        write!(f, "")
-    }
-}
-
-pub enum Command {
-    Scoreboard { command: ScoreboardCommand },
-}
-
-impl Display for Command {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Command::Scoreboard { command } => write!(f, "{}", command),
-        }
-    }
-}
-
-pub enum ScoreboardCommand {
-    ObjectivesAdd {
-        id: String,
-        criteria: ObjectiveCriteria,
-        name: Option<String>,
-    },
-    PlayersSet {
-        target: CommandTarget,
-        objective: String,
-        score: i32,
-    },
-    PlayersAdd {
-        target: CommandTarget,
-        objective: String,
-        to_add: i32,
-    },
-    PlayersRemove {
-        target: CommandTarget,
-        objective: String,
-        to_remove: i32,
-    },
-    PlayersOperation {
-        target: CommandTarget,
-        objective: String,
-        operation: ScoreboardOperation,
-        source: CommandTarget,
-        source_objective: String,
-    },
-}
-
-impl Display for ScoreboardCommand {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ScoreboardCommand::ObjectivesAdd { id, criteria, name } => match name {
-                Some(n) => write!(f, "scoreboard objectives add {} {} {}", id, criteria, n),
-                None => write!(f, "scoreboard objectives add {} {}", id, criteria),
-            },
-            ScoreboardCommand::PlayersSet {
-                target,
-                objective,
-                score,
-            } => write!(
-                f,
-                "scoreboard players set {} {} {}",
-                target, objective, score
-            ),
-            ScoreboardCommand::PlayersAdd {
-                target,
-                objective,
-                to_add,
-            } => write!(
-                f,
-                "scoreboard players add {} {} {}",
-                target, objective, to_add
-            ),
-            ScoreboardCommand::PlayersRemove {
-                target,
-                objective,
-                to_remove,
-            } => write!(
-                f,
-                "scoreboard players remove {} {} {}",
-                target, objective, to_remove
-            ),
-            ScoreboardCommand::PlayersOperation {
-                target,
-                objective,
-                operation,
-                source,
-                source_objective,
-            } => write!(
-                f,
-                "scoreboard players operation {} {} {} {} {}",
-                target, objective, operation, source, source_objective
-            ),
-        }
-    }
-}
-
-pub enum ObjectiveCriteria {
-    Dummy,
-}
-
-impl Display for ObjectiveCriteria {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ObjectiveCriteria::Dummy => write!(f, "dummy"),
-        }
-    }
-}
-
-pub enum ScoreboardOperation {
-    Addition,
-    Subtraction,
-    Multiplication,
-    Division,
-    Modulo,
-    Assign,
-    Min,
-    Max,
-    Swap,
-}
-
-impl Display for ScoreboardOperation {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ScoreboardOperation::Addition => write!(f, "+="),
-            ScoreboardOperation::Subtraction => write!(f, "-="),
-            ScoreboardOperation::Multiplication => write!(f, "*="),
-            ScoreboardOperation::Division => write!(f, "/="),
-            ScoreboardOperation::Modulo => write!(f, "%="),
-            ScoreboardOperation::Assign => write!(f, "="),
-            ScoreboardOperation::Min => write!(f, "<"),
-            ScoreboardOperation::Max => write!(f, ">"),
-            ScoreboardOperation::Swap => write!(f, "><"),
-        }
-    }
-}
-
-pub enum CommandTarget {
-    Name { name: String },
-}
-
-impl Display for CommandTarget {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            CommandTarget::Name { name } => write!(f, "{}", name),
-        }
+        Ok(())
     }
 }

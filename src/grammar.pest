@@ -1,11 +1,7 @@
-program = { SOI ~ function+ ~ EOI }
+program = { SOI ~ (function | mcfunction)+ ~ EOI }
 
 function = { "function" ~ name ~ variable_declaration_list ~ ("->" ~ var_type)? ~ block }
-
-mcfunction = { "mcfunction" ~ name ~ variable_declaration_list ~ block }
-
-mcfunction_type = { "mcfunction" }
-function_type = { "function" }
+mcfunction = { "mcfunction" ~ name ~ block }
 
 name = @{ (ASCII_ALPHA | "_")+ ~ (ASCII_ALPHANUMERIC | "_")* }
 
@@ -17,7 +13,10 @@ int_type = { "int" }
 
 block = { "{" ~ statement* ~ "}" }
 
-statement = _{ (assignment | variable_declaration) ~ ";" }
+statement = _{ (assignment | variable_declaration | return_statement) ~ ";" }
+
+return_statement = { return_keyword ~ expression }
+return_keyword = _{ "return" }
 
 assignment = { assignable ~ assignment_operator ~ expression }
 assignable = _{ variable_declaration | name }
@@ -33,7 +32,10 @@ multiply = { "*" }
 divide = { "/" }
 modulo = { "%" }
 
-expression = _{ binary_operation | parenthetical_expression }
+function_call = { name ~ argument_list }
+argument_list = _{ "(" ~ (expression ~ ("," ~ expression)*)? ~ ")" }
+
+expression = _{ function_call | binary_operation | parenthetical_expression }
 parenthetical_expression = _{ "(" ~ expression ~ ")" }
 
 number_literal = ${ "-"? ~ ASCII_DIGIT+ }

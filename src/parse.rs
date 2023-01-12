@@ -7,7 +7,7 @@ use pest::pratt_parser::Op;
 use pest::pratt_parser::PrattParser;
 use pest::Parser;
 
-use crate::ast::{ASTNode, ASTNodeType, FunctionType, VarType, VariableDeclaration};
+use crate::ast::{ASTNode, ASTNodeType, VarType, VariableDeclaration};
 use crate::error::CompileError;
 use crate::tree::{NodeId, Tree};
 
@@ -38,7 +38,6 @@ pub fn parse(toparse: &str) -> Result<Tree<ASTNode>, CompileError> {
         let node_type: Option<ASTNodeType> = match rule {
             Rule::program => Some(ASTNodeType::Program),
             Rule::function => Some(ASTNodeType::Function {
-                func_type: parse_func_type(inner_pairs.next().unwrap()),
                 name: inner_pairs.next().unwrap().as_str().to_owned(),
                 params: parse_declaration_list(inner_pairs.next().unwrap()),
                 return_type: {
@@ -49,13 +48,16 @@ pub fn parse(toparse: &str) -> Result<Tree<ASTNode>, CompileError> {
                     }
                 },
             }),
+            Rule::mcfunction => Some(ASTNodeType::MCFunction {
+                name: inner_pairs.next().unwrap().as_str().to_owned(),
+            }),
             Rule::block => Some(ASTNodeType::Block),
             Rule::EOI => None,
             Rule::variable_declaration => {
                 inner_pairs.next();
                 inner_pairs.next();
                 Some(ASTNodeType::VariableDeclaration {
-                    declaration: parse_variable_declaration(pair),
+                    declaration: parse_variable_declaration(pair.clone()),
                 })
             }
             Rule::assignment => Some(ASTNodeType::Assignment),
@@ -63,14 +65,18 @@ pub fn parse(toparse: &str) -> Result<Tree<ASTNode>, CompileError> {
                 id: pair.as_str().to_owned(),
             }),
             Rule::number_literal => Some(ASTNodeType::NumberLiteral {
-                value: parse_number_literal(pair),
+                value: parse_number_literal(pair.clone()),
             }),
             Rule::binary_operation => None,
+            Rule::return_statement => Some(ASTNodeType::ReturnStatement),
+            Rule::function_call => Some(ASTNodeType::FunctionCall {
+                id: inner_pairs.next().unwrap().as_str().to_owned(),
+            }),
             _ => unreachable!("{:?}", pair.as_rule()),
         };
 
         if let Some(n_type) = node_type {
-            let node = tree.new_node(ASTNode { node_type: n_type });
+            let node = tree.new_node(ASTNode::new(n_type, pair));
             for child in inner_pairs {
                 if let Some(c_node) = parse_pair(tree, child) {
                     tree.append_to(node, c_node).unwrap();
@@ -93,7 +99,7 @@ pub fn parse(toparse: &str) -> Result<Tree<ASTNode>, CompileError> {
                         _ => unreachable!(),
                     };
 
-                    let node = treerc.borrow_mut().new_node(ASTNode { node_type });
+                    let node = treerc.borrow_mut().new_node(ASTNode::new(node_type, op));
                     treerc.borrow_mut().append_to(node, lhs.unwrap()).unwrap();
                     treerc.borrow_mut().append_to(node, rhs.unwrap()).unwrap();
                     Some(node)
@@ -102,14 +108,6 @@ pub fn parse(toparse: &str) -> Result<Tree<ASTNode>, CompileError> {
             ret_node
         } else {
             None
-        }
-    }
-
-    fn parse_func_type(pair: Pair<Rule>) -> FunctionType {
-        match pair.as_rule() {
-            Rule::mcfunction_type => FunctionType::MCFunction,
-            Rule::static_function_type => FunctionType::Function,
-            _ => unreachable!(),
         }
     }
 
