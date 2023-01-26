@@ -8,7 +8,7 @@ use std::{
 };
 
 use crate::{
-    ast::{StringContext, VarType, VariableDeclaration},
+    ast::{ScopeModifier, StringContext, VarType, VariableDeclaration},
     datapack::DataPack,
     error::CompileError,
     mcfunction::{Command, CommandTarget, MCFunction, ScoreboardCommand},
@@ -42,13 +42,13 @@ impl Program {
         }
     }
 
-    pub fn global_scope(&self) -> Result<&Scope, CompileError> {
-        Ok(self.scopes.get_node(self.scopes.get_root()?)?)
-    }
+    // pub fn global_scope(&self) -> Result<&Scope, CompileError> {
+    //     Ok(self.scopes.get_node(self.scopes.get_root()?)?)
+    // }
 
-    pub fn global_scope_mut(&mut self) -> Result<&mut Scope, CompileError> {
-        Ok(self.scopes.get_node_mut(self.scopes.get_root()?)?)
-    }
+    // pub fn global_scope_mut(&mut self) -> Result<&mut Scope, CompileError> {
+    //     Ok(self.scopes.get_node_mut(self.scopes.get_root()?)?)
+    // }
 
     pub fn new_function(&mut self, name: &str, private: bool) -> FunctionID {
         let id = FunctionID {
@@ -78,6 +78,39 @@ impl Program {
         let nodeid = self.scopes.new_node(Scope::new(&self.program_name));
         self.scopes.append_to(parent, nodeid)?;
         Ok(nodeid)
+    }
+
+    pub fn get_var(
+        &self,
+        name: &str,
+        context: &StringContext,
+        scope: NodeId,
+    ) -> Result<&Variable, CompileError> {
+        let ascender = self.scopes.iter_ascend(scope)?;
+        for scope_id in ascender {
+            if let Some(var) = self.scopes.get_node(scope_id)?.get_var(name) {
+                return Ok(var);
+            }
+        }
+        Err(CompileError::VariableNotDeclared {
+            var_name: name.to_string(),
+            context: context.clone(),
+        })
+    }
+
+    pub fn new_var(
+        &mut self,
+        var_type: VarType,
+        name: &str,
+        context: &StringContext,
+        scope_id: NodeId,
+        scope_modifier: ScopeModifier,
+    ) -> Result<&Variable, CompileError> {
+        let scope = self.scopes.get_node_mut(match scope_modifier {
+            ScopeModifier::Default => scope_id,
+            ScopeModifier::Global => self.scopes.get_root()?,
+        })?;
+        scope.new_var(var_type, name, context)
     }
 
     fn generate_cleanup(&mut self) -> Result<(), CompileError> {
@@ -218,7 +251,7 @@ impl Scope {
         }
     }
 
-    pub fn new_var(
+    fn new_var(
         &mut self,
         var_type: VarType,
         name: &str,
@@ -248,7 +281,7 @@ impl Scope {
         context: &StringContext,
     ) -> Result<&Variable, CompileError> {
         let mut name = random_name();
-        while self.get_var(&name, context).is_ok() {
+        while self.get_var(&name).is_some() {
             name = random_name();
         }
 
@@ -271,12 +304,7 @@ impl Scope {
         Ok(vars)
     }
 
-    pub fn get_var(&self, name: &str, context: &StringContext) -> Result<&Variable, CompileError> {
-        self.variables
-            .get(name)
-            .ok_or(CompileError::VariableNotDeclared {
-                var_name: name.to_string(),
-                context: context.clone(),
-            })
+    fn get_var(&self, name: &str) -> Option<&Variable> {
+        self.variables.get(name)
     }
 }

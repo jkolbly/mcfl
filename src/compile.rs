@@ -1,5 +1,5 @@
 use crate::{
-    ast::{ASTNode, ASTNodeType, VarType},
+    ast::{ASTNode, ASTNodeType, ScopeModifier, VarType},
     error::CompileError,
     mcfunction::{
         Command, CommandTarget, MCFunctionID, ObjectiveCriteria, ScoreboardCommand,
@@ -87,11 +87,22 @@ fn get_compiled_function(
                     .get_node_mut(scope_id)?
                     .new_vars(params, &func_node.context)?;
                 let output = if let Some(ret) = return_type {
+                    // Some(
+                    //     program
+                    //         .scopes
+                    //         .get_node_mut(scope_id)?
+                    //         .new_var(*ret, &format!("{}-output", name), &func_node.context)?
+                    //         .clone(),
+                    // )
                     Some(
                         program
-                            .scopes
-                            .get_node_mut(scope_id)?
-                            .new_var(*ret, &format!("{}-output", name), &func_node.context)?
+                            .new_var(
+                                *ret,
+                                &format!("{}-output", name),
+                                &func_node.context,
+                                scope_id,
+                                ScopeModifier::Global,
+                            )?
                             .clone(),
                     )
                 } else {
@@ -124,17 +135,23 @@ fn compile_block(
     return_to: Option<Variable>,
     scope_id: NodeId,
 ) -> Result<(), CompileError> {
-    // let scope_id = program.new_scope(parent_scope)?;
-    // let scope = program.scopes.get_node_mut(scope_id)?;
-
     for line in tree.get_children(block)? {
         let n = tree.get_node(*line)?;
         match &n.node_type {
             ASTNodeType::VariableDeclaration { declaration } => {
+                // let var = program
+                //     .scopes
+                //     .get_node_mut(scope_id)?
+                //     .new_var(declaration.var_type, &declaration.name, &n.context)?
+                //     .clone();
                 let var = program
-                    .scopes
-                    .get_node_mut(scope_id)?
-                    .new_var(declaration.var_type, &declaration.name, &n.context)?
+                    .new_var(
+                        declaration.var_type,
+                        &declaration.name,
+                        &n.context,
+                        scope_id,
+                        declaration.scope_modifier,
+                    )?
                     .clone();
                 set_int(program, func_id, &var, 0)?;
             }
@@ -142,10 +159,21 @@ fn compile_block(
                 let first_child = tree.get_first_child(*line)?;
                 let scope = program.scopes.get_node_mut(scope_id)?;
                 let dest_var = match &tree.get_node(first_child)?.node_type {
-                    ASTNodeType::VariableDeclaration { declaration } => scope
-                        .new_var(declaration.var_type, &declaration.name, &n.context)?
+                    ASTNodeType::VariableDeclaration { declaration } => program
+                        .new_var(
+                            declaration.var_type,
+                            &declaration.name,
+                            &n.context,
+                            scope_id,
+                            declaration.scope_modifier,
+                        )?
                         .clone(),
-                    ASTNodeType::Identifier { id } => scope.get_var(id, &n.context)?.clone(),
+                    // scope
+                    //     .new_var(declaration.var_type, &declaration.name, &n.context)?
+                    //     .clone(),
+                    ASTNodeType::Identifier { id } => {
+                        program.get_var(id, &n.context, scope_id)?.clone()
+                    }
                     _ => unreachable!(),
                 };
                 eval_expression(
@@ -201,7 +229,10 @@ fn eval_expression(
                 objective: program.ints_objective.to_owned(),
                 operation: ScoreboardOperation::Assign,
                 source: CommandTarget::Name {
-                    name: scope.get_var(id, &node.context)?.get_mc_name().to_owned(),
+                    name: program
+                        .get_var(id, &node.context, scope_id)?
+                        .get_mc_name()
+                        .to_owned(),
                 },
                 source_objective: program.ints_objective.to_owned(),
             }
@@ -293,10 +324,7 @@ fn eval_binary_op(
     let lhs_node = tree.get_node(lhs)?;
     match &lhs_node.node_type {
         ASTNodeType::Identifier { id } => {
-            let old_var = program
-                .scopes
-                .get_node(scope_id)?
-                .get_var(id, &lhs_node.context)?;
+            let old_var = program.get_var(id, &lhs_node.context, scope_id)?;
             program.new_command(
                 func_id,
                 ScoreboardCommand::PlayersOperation {

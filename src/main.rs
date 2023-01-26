@@ -29,22 +29,16 @@ fn main() {
     let parsed = parse(
         "
         mcfunction startup {
-            int a = 2;
-            int b = a;
-            int c = a + b;
-            int d = 1 + c + (a + b) * 2 + 3;
-            int e = a + b + c;
-
             int f = f; // TODO: This shouldn't compile
 
-            int counter = 0;
+            global int counter = 0;
             int seconds = 0;
 
             int added = add(99, 101);
         }
 
         mcfunction tick {
-            int counter = counter + 1; // TODO: This compiles to something stupid...
+            counter = counter + 1; // TODO: This compiles to something stupid...
             int seconds = counter / 20;
         }
         

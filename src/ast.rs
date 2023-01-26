@@ -58,12 +58,19 @@ pub enum ASTNodeType {
 }
 
 #[derive(Debug, Clone, Copy)]
+pub enum ScopeModifier {
+    Default,
+    Global,
+}
+
+#[derive(Debug, Clone, Copy)]
 pub enum VarType {
     Int,
 }
 
 #[derive(Debug)]
 pub struct VariableDeclaration {
+    pub scope_modifier: ScopeModifier,
     pub name: String,
     pub var_type: VarType,
 }

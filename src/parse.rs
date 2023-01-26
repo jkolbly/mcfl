@@ -7,6 +7,7 @@ use pest::pratt_parser::Op;
 use pest::pratt_parser::PrattParser;
 use pest::Parser;
 
+use crate::ast::ScopeModifier;
 use crate::ast::{ASTNode, ASTNodeType, VarType, VariableDeclaration};
 use crate::error::CompileError;
 use crate::tree::{NodeId, Tree};
@@ -39,7 +40,7 @@ pub fn parse(toparse: &str) -> Result<Tree<ASTNode>, CompileError> {
             Rule::program => Some(ASTNodeType::Program),
             Rule::function => Some(ASTNodeType::Function {
                 name: inner_pairs.next().unwrap().as_str().to_owned(),
-                params: parse_declaration_list(inner_pairs.next().unwrap()),
+                params: parse_param_list(inner_pairs.next().unwrap()),
                 return_type: {
                     if let Rule::var_type = inner_pairs.peek().unwrap().as_rule() {
                         Some(parse_var_type(inner_pairs.next().unwrap()))
@@ -118,13 +119,30 @@ pub fn parse(toparse: &str) -> Result<Tree<ASTNode>, CompileError> {
         }
     }
 
-    fn parse_declaration_list(pair: Pair<Rule>) -> Vec<VariableDeclaration> {
+    fn parse_var_scope(pair_option: Option<Pair<Rule>>) -> ScopeModifier {
+        if let Some(pair) = pair_option {
+            match pair.into_inner().next().unwrap().as_rule() {
+                Rule::global_scope => ScopeModifier::Global,
+                _ => unreachable!(),
+            }
+        } else {
+            ScopeModifier::Default
+        }
+    }
+
+    fn parse_param_list(pair: Pair<Rule>) -> Vec<VariableDeclaration> {
         pair.into_inner().map(parse_variable_declaration).collect()
     }
 
     fn parse_variable_declaration(pair: Pair<Rule>) -> VariableDeclaration {
         let mut inner_pairs = pair.into_inner();
+        let scope_mod = if let Rule::var_scope = inner_pairs.peek().unwrap().as_rule() {
+            Some(inner_pairs.next().unwrap())
+        } else {
+            None
+        };
         VariableDeclaration {
+            scope_modifier: parse_var_scope(scope_mod),
             var_type: parse_var_type(inner_pairs.next().unwrap()),
             name: inner_pairs.next().unwrap().as_str().to_owned(),
         }

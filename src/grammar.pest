@@ -1,12 +1,17 @@
 program = { SOI ~ (function | mcfunction)+ ~ EOI }
 
-function = { "function" ~ name ~ variable_declaration_list ~ ("->" ~ var_type)? ~ block }
+function = { "function" ~ name ~ parameter_declaration_list ~ ("->" ~ var_type)? ~ block }
 mcfunction = { "mcfunction" ~ name ~ block }
 
 name = @{ (ASCII_ALPHA | "_")+ ~ (ASCII_ALPHANUMERIC | "_")* }
 
-variable_declaration_list = { "(" ~ (variable_declaration ~ ("," ~ variable_declaration)*)? ~ ")" }
-variable_declaration = { var_type ~ name }
+parameter_declaration_list = { "(" ~ (parameter_declaration ~ ("," ~ parameter_declaration)*)? ~ ")" }
+parameter_declaration = { var_type ~ name }
+
+variable_declaration = { var_scope? ~ var_type ~ name }
+
+var_scope = { global_scope }
+global_scope = { "global" }
 
 var_type = { int_type }
 int_type = { "int" }

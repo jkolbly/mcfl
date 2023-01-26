@@ -1,9 +1,6 @@
 use std::{collections::HashMap, fmt::Debug};
 
-use crate::{
-    error::TreeError,
-    id_tracker::{self, ID_TRACKER},
-};
+use crate::{error::TreeError, id_tracker::ID_TRACKER};
 
 /// Generic tree struct that stores a vector of nodes which can be accessed with their ID's.
 pub struct Tree<T> {
@@ -111,6 +108,11 @@ impl<T> Tree<T> {
     /// Returns an iterator over the subtree starting with `head`. Implemented non-recursively
     pub fn iter_subtree(&self, head: NodeId) -> Result<TreeIterator<T>, TreeError> {
         TreeIterator::iter_subtree(self, head)
+    }
+
+    /// Returns an iterator starting from a node and moving up the tree until the root
+    pub fn iter_ascend(&self, start: NodeId) -> Result<TreeAscender<T>, TreeError> {
+        TreeAscender::ascend_tree(self, start)
     }
 
     /// Returns a vector of children for a node
@@ -281,6 +283,44 @@ impl<'a, T> Iterator for TreeIterator<'a, T> {
                 return Some(ret);
             }
         }
+    }
+}
+
+/// Iterator that iterates over a tree in a depth-first fashion to get the ID's of every node
+pub struct TreeAscender<'a, T> {
+    tree: &'a Tree<T>,
+    cur_node: NodeId,
+    finished: bool,
+}
+
+impl<'a, T> TreeAscender<'a, T> {
+    fn ascend_tree(tree: &'a Tree<T>, start: NodeId) -> Result<TreeAscender<'a, T>, TreeError> {
+        tree.get_node(start)?;
+        Ok(TreeAscender {
+            tree,
+            cur_node: start,
+            finished: false,
+        })
+    }
+}
+
+impl<'a, T> Iterator for TreeAscender<'a, T> {
+    type Item = NodeId;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.finished {
+            return None;
+        }
+
+        let ret = self.cur_node;
+
+        if let Ok(parent) = self.tree.get_parent(ret) {
+            self.cur_node = parent;
+        } else {
+            self.finished = true;
+        }
+
+        Some(ret)
     }
 }
 
