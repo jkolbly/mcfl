@@ -29,7 +29,8 @@ pub struct Program {
 impl Program {
     pub fn new(name: &str) -> Program {
         let mut scopes = Tree::new();
-        scopes.new_node(Scope::new(name));
+        let nodeid = scopes.next_id();
+        scopes.new_node(Scope::new(name, nodeid));
 
         Program {
             program_name: name.to_owned(),
@@ -75,7 +76,8 @@ impl Program {
     }
 
     pub fn new_scope(&mut self, parent: NodeId) -> Result<NodeId, CompileError> {
-        let nodeid = self.scopes.new_node(Scope::new(&self.program_name));
+        let nodeid = self.scopes.next_id();
+        self.scopes.new_node(Scope::new(&self.program_name, nodeid));
         self.scopes.append_to(parent, nodeid)?;
         Ok(nodeid)
     }
@@ -244,10 +246,10 @@ pub struct Scope {
 }
 
 impl Scope {
-    pub fn new(program_name: &str) -> Scope {
+    pub fn new(program_name: &str, id: NodeId) -> Scope {
         Scope {
             variables: HashMap::new(),
-            mc_name_prefix: format!("mcfl-{}", program_name),
+            mc_name_prefix: format!("mcfl-{}-{}", program_name, id.get_id()),
         }
     }
 

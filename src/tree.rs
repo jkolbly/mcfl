@@ -27,12 +27,17 @@ impl<T> Tree<T> {
         }
     }
 
-    /// Create a new node and return its ID. If this tree has no root, make the new node the root
-    pub fn new_node(&mut self, data: T) -> NodeId {
-        let new_id = NodeId {
+    /// Get the next ID that will be used by `new_node` without advancing the index
+    pub fn next_id(&self) -> NodeId {
+        NodeId {
             id: self.next_index,
             tree_id: self.id,
-        };
+        }
+    }
+
+    /// Create a new node and return its ID. If this tree has no root, make the new node the root
+    pub fn new_node(&mut self, data: T) -> NodeId {
+        let new_id = self.next_id();
         self.next_index += 1;
 
         self.nodes.insert(
@@ -345,4 +350,11 @@ struct Node<T> {
 pub struct NodeId {
     id: usize,
     tree_id: usize,
+}
+
+impl NodeId {
+    /// Get the `id` field, which is unique within this tree but not globally unique.
+    pub fn get_id(&self) -> usize {
+        self.id
+    }
 }

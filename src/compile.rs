@@ -1,11 +1,12 @@
 use crate::{
     ast::{ASTNode, ASTNodeType, ScopeModifier, VarType},
     error::CompileError,
+    ir::IR,
     mcfunction::{
         Command, CommandTarget, MCFunctionID, ObjectiveCriteria, ScoreboardCommand,
         ScoreboardOperation,
     },
-    program::{FunctionID, FunctionVars, Program, Scope, Variable},
+    program::{FunctionID, FunctionVars, Program, Variable},
     tree::{NodeId, Tree},
 };
 
@@ -139,11 +140,6 @@ fn compile_block(
         let n = tree.get_node(*line)?;
         match &n.node_type {
             ASTNodeType::VariableDeclaration { declaration } => {
-                // let var = program
-                //     .scopes
-                //     .get_node_mut(scope_id)?
-                //     .new_var(declaration.var_type, &declaration.name, &n.context)?
-                //     .clone();
                 let var = program
                     .new_var(
                         declaration.var_type,
@@ -157,7 +153,6 @@ fn compile_block(
             }
             ASTNodeType::Assignment => {
                 let first_child = tree.get_first_child(*line)?;
-                let scope = program.scopes.get_node_mut(scope_id)?;
                 let dest_var = match &tree.get_node(first_child)?.node_type {
                     ASTNodeType::VariableDeclaration { declaration } => program
                         .new_var(
@@ -168,9 +163,6 @@ fn compile_block(
                             declaration.scope_modifier,
                         )?
                         .clone(),
-                    // scope
-                    //     .new_var(declaration.var_type, &declaration.name, &n.context)?
-                    //     .clone(),
                     ASTNodeType::Identifier { id } => {
                         program.get_var(id, &n.context, scope_id)?.clone()
                     }
@@ -209,6 +201,7 @@ fn compile_block(
 }
 
 /// Evaluate an expression and put the result in `dest_var`
+/// TODO: Support declaring new variable after evaluation
 fn eval_expression(
     program: &mut Program,
     func_id: &FunctionID,
@@ -218,7 +211,6 @@ fn eval_expression(
     scope_id: NodeId,
 ) -> Result<(), CompileError> {
     let node = tree.get_node(expression)?;
-    let scope = program.scopes.get_node(scope_id)?;
     match &node.node_type {
         ASTNodeType::Identifier { id } => program.new_command(
             func_id,

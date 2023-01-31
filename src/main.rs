@@ -15,6 +15,7 @@ mod compile;
 mod datapack;
 mod error;
 mod id_tracker;
+mod ir;
 mod mcfunction;
 mod parse;
 mod program;
