@@ -11,19 +11,35 @@ use crate::{
     ast::{ScopeModifier, StringContext, VarType, VariableDeclaration},
     datapack::DataPack,
     error::CompileError,
+    ir::{IRFunc, IRNode},
     mcfunction::{Command, CommandTarget, MCFunction, ScoreboardCommand},
     tree::{NodeId, Tree},
 };
 
 /// The intermediate representation of an MCFL program. Contains the contents of .mcfunction files as well as associated information like variables
 pub struct Program {
-    pub program_name: String,
-    mcfunctions: HashMap<FunctionID, MCFunction>,
+    /// A string representing the name of the program.
+    ///
+    /// This is used for naming variables and datapacks
+    program_name: String,
+
+    /// A hashmap mapping function ID's to their corresponding IRFunc.
+    functions: HashMap<FunctionID, IRFunc>,
+
+    /// Maps compiled MCFL function names to their corresponding variables.
     pub compiled_functions: HashMap<String, FunctionVars>,
-    pub scopes: Tree<Scope>,
-    pub ints_objective: String,
+
+    /// A tree of scopes with the global scope at the root.
+    scopes: Tree<Scope>,
+
+    /// The name of the scoreboard objective used by mcfl to track integers.
+    ints_objective: String,
+
+    /// The name of the cleanup function in Minecraft.
     cleanup_function_id: String,
-    pub private_namespace_name: String,
+
+    /// The name to use for the private namespace in Minecraft.
+    private_namespace_name: String,
 }
 
 impl Program {
@@ -34,7 +50,7 @@ impl Program {
 
         Program {
             program_name: name.to_owned(),
-            mcfunctions: HashMap::new(),
+            functions: HashMap::new(),
             compiled_functions: HashMap::new(),
             scopes,
             ints_objective: "mcfl_ints".to_owned(),
@@ -57,21 +73,21 @@ impl Program {
             mc_name: name.to_owned(),
             private,
         };
-        self.mcfunctions.insert(id.clone(), MCFunction::new());
+        self.functions.insert(id.clone(), IRFunc::new());
         id
     }
 
     pub fn new_command(
         &mut self,
         func_id: &FunctionID,
-        command: Command,
+        command: IRNode,
     ) -> Result<(), CompileError> {
-        self.mcfunctions
+        self.functions
             .get_mut(func_id)
             .ok_or(CompileError::UnknownFunctionID {
                 id: func_id.to_owned(),
             })?
-            .new_command(command);
+            .add_node(command);
         Ok(())
     }
 
