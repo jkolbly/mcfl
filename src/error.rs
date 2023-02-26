@@ -1,6 +1,5 @@
 use crate::ast::StringContext;
 use crate::parse::Rule;
-use crate::program::{FunctionID, Variable};
 use crate::tree::NodeId;
 use pest::error::Error;
 

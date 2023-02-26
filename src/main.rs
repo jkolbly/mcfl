@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::{ast::ASTNode, compile::compile, tree::Tree};
+use crate::{ast::ASTNode, tree::Tree};
 use datapack::DataPack;
 use parse::parse;
 
@@ -18,7 +18,6 @@ mod id_tracker;
 mod ir;
 mod mcfunction;
 mod parse;
-mod program;
 mod tree;
 
 /// TODO:
@@ -49,7 +48,7 @@ fn main() {
     )
     .unwrap();
     println!("{:?}", parsed);
-    let compiled = compile(&parsed).unwrap();
-    // println!("{}", compiled.unwrap());
-    DataPack::from(compiled).save(Path::new("C:\\Program Files\\MultiMC\\instances\\1.13.2\\.minecraft\\saves\\MCFL Playground\\datapacks")).unwrap();
+    // let compiled = compile(&parsed).unwrap();
+    // println!("{}", compiled);
+    // DataPack::from(compiled).save(Path::new("C:\\Program Files\\MultiMC\\instances\\1.13.2\\.minecraft\\saves\\MCFL Playground\\datapacks")).unwrap();
 }
