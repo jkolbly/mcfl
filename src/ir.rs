@@ -14,6 +14,14 @@ pub struct IR {
     functions: HashMap<String, IRFunc>,
 }
 
+impl IR {
+    pub fn new() -> IR {
+        IR {
+            functions: HashMap::new(),
+        }
+    }
+}
+
 /// An IRFunc is a one-dimensional set of instructions that are higher level than Minecraft but lower level than MCFL
 ///
 /// Note that the memory structure of an MCFL program in Minecraft is as follows:
