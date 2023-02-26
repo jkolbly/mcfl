@@ -1,22 +1,37 @@
 use std::collections::HashMap;
 
-use crate::{mcfunction::ScoreboardOperation, program::FunctionID};
+use crate::mcfunction::ScoreboardOperation;
+
+/// The intermediate representation of an MCFL program.
+/// Keeps track of useful things like:
+///     - Functions
+///     - Variables
+pub struct IR {
+    /// The functions making up this program.
+    /// Keys are the name of the program, as written in the MCFL source.
+    ///
+    /// Note that not all functions appear in the MCFL source (ex. loops). These will have a randomly generated name.
+    functions: HashMap<String, IRFunc>,
+}
 
 /// An IRFunc is a one-dimensional set of instructions that are higher level than Minecraft but lower level than MCFL
 ///
-/// Note that the memory structure of an MCFL program in Minecraft is as follows
+/// Note that the memory structure of an MCFL program in Minecraft is as follows:
 ///     - Named: Variables whose names can be known at compile time. Least overhead, as variable access is simply by name and is O(1)
 ///     - Stack: Callstacks for functions with variables that may be overwritten otherwise. Medium overhead, as stack traversal requires nonzero overhead but is O(1)
 ///     - Heap: Arrays and everything else that doesn't fit above. Significant overhead, as using a reference on the heap is O(logn)
 pub struct IRFunc {
+    /// The nodes composing this function, to be executed linearly.
     nodes: Vec<IRNode>,
 }
 
 impl IRFunc {
+    /// Create a new empty function.
     pub fn new() -> IRFunc {
         IRFunc { nodes: Vec::new() }
     }
 
+    /// Add an IRNode to the end of this function.
     pub fn add_node(&mut self, node: IRNode) {
         self.nodes.push(node);
     }
