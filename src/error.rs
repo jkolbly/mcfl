@@ -15,7 +15,7 @@ pub enum TreeError {
 
 pub enum CompileError {
     ParseError {
-        err: Error<Rule>,
+        err: Box<Error<Rule>>,
     },
     TreeError {
         err: TreeError,
@@ -111,7 +111,7 @@ impl From<TreeError> for CompileError {
 
 impl From<Error<Rule>> for CompileError {
     fn from(err: Error<Rule>) -> Self {
-        CompileError::ParseError { err }
+        CompileError::ParseError { err: Box::new(err) }
     }
 }
 
