@@ -26,6 +26,11 @@ impl DataPack {
         }
     }
 
+    /// Save this datapack to a directory.
+    ///
+    /// * `dest_dir` - The directory in which to write this datapack. For example, the datapacks folder for a Minecraft save.
+    ///
+    /// Note that the datapack will be saved to a folder whose title is the name of the datapack.
     pub fn save(&self, dest_dir: &Path) -> Result<(), CompileError> {
         let path = &dest_dir.join(&self.name);
 
