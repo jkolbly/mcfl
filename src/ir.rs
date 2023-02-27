@@ -15,6 +15,7 @@ pub struct IR {
 }
 
 impl IR {
+    /// Create a new empty IR
     pub fn new() -> IR {
         IR {
             functions: HashMap::new(),
