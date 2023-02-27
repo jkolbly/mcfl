@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 use serde_json::json;
 
 use crate::error::CompileError;
+use crate::ir::IR;
 use crate::mcfunction::MCFunction;
 
 pub struct DataPack {
@@ -67,6 +68,12 @@ impl DataPack {
         self.private_namespace.save(path)?;
 
         Ok(())
+    }
+}
+
+impl From<IR> for DataPack {
+    fn from(_: IR) -> Self {
+        todo!()
     }
 }
 
