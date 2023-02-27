@@ -26,7 +26,7 @@ pub enum CompileError {
     NoEntryPoint {},
     CompilingNonMCFunction {},
     VariableAlreadyDeclared {
-        var: Variable,
+        var: String,
         context: StringContext,
     },
     VariableNotDeclared {
@@ -66,7 +66,7 @@ impl std::fmt::Debug for CompileError {
             }
             Self::VariableAlreadyDeclared { var, context } => include_pos(
                 context,
-                &format!("Variable {:?} has already been declared", var.get_name()),
+                &format!("Variable {:?} has already been declared", var),
             ),
             Self::VariableNotDeclared { var_name, context } => include_pos(
                 context,
