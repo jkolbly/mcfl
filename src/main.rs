@@ -1,7 +1,9 @@
-use std::path::Path;
+use core::panic;
+use std::{fs::File, io::Read, path::Path};
 
-use crate::{ast::ASTNode, tree::Tree};
+use compile::compile;
 use datapack::DataPack;
+use error::CompileError;
 use parse::parse;
 
 extern crate pest;
@@ -26,29 +28,29 @@ mod tree;
 /// - Make it possible to save state
 
 fn main() {
-    let parsed = parse(
-        "
-        mcfunction startup {
-            int f = f; // TODO: This shouldn't compile
+    let compiled = compile_file("examples/test.mcfl").unwrap();
+}
 
-            global int counter = 0;
-            int seconds = 0;
+fn compile_file(file_path: &str) -> Result<DataPack, CompileError> {
+    let path = Path::new(file_path);
+    let path_display = path.display();
 
-            int added = add(99, 101);
-        }
+    let mut file = match File::open(path) {
+        Ok(file) => file,
+        Err(err) => panic!("Couldn't read file {}: {}", path_display, err),
+    };
 
-        mcfunction tick {
-            counter = counter + 1; // TODO: This compiles to something stupid...
-            int seconds = counter / 20;
-        }
-        
-        function add(int a_arg, int b_arg) -> int {
-            return a_arg + b_arg;
-        }",
-    )
-    .unwrap();
-    println!("{:?}", parsed);
-    // let compiled = compile(&parsed).unwrap();
-    // println!("{}", compiled);
-    // DataPack::from(compiled).save(Path::new("C:\\Program Files\\MultiMC\\instances\\1.13.2\\.minecraft\\saves\\MCFL Playground\\datapacks")).unwrap();
+    let mut s = String::new();
+    match file.read_to_string(&mut s) {
+        Ok(_) => {}
+        Err(err) => panic!("Couldn't read file to string {}: {}", path_display, err),
+    };
+
+    compile_string(&s)
+}
+
+fn compile_string(toparse: &str) -> Result<DataPack, CompileError> {
+    let parsed = parse(toparse)?;
+    let compiled = compile(&parsed)?;
+    Ok(DataPack::from(compiled))
 }
