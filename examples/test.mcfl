@@ -1,0 +1,17 @@
+mcfunction startup {
+    int f = f; // TODO: This shouldn't compile
+
+    global int counter = 0;
+    int seconds = 0;
+
+    int added = add(99, 101);
+}
+
+mcfunction tick {
+    counter = counter + 1; // TODO: This compiles to something stupid...
+    int seconds = counter / 20;
+}
+
+function add(int a_arg, int b_arg) -> int {
+    return a_arg + b_arg;
+}
