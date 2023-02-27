@@ -38,7 +38,7 @@ pub enum CompileError {
         context: StringContext,
     },
     UnknownFunctionID {
-        id: FunctionID,
+        id: String,
     },
     AttemptedIllegalReturn {
         context: StringContext,
