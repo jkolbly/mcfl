@@ -32,7 +32,7 @@ MCFL is a functional programming language and has no classes or objects. All cod
 
 In general, there are two types of functions: MCfunctions and static functions. MCfunctions are compiled to their own `.mcfunction` files, meaning they can be called on their own in-game. Static functions are not and cannot be called directly outside the MCFL program.
 
-The `tick()` and `startup()` functions are special. A program must define at least one of these to have any effect. Both are MCfunctions that take no arguments. The `tick()` function is called every game tick, while the `startup()` function is called once when the datapack is loaded.
+The `tick()` and `startup()` functions are special. A program must define at least one of these to have any effect outside of manually calling functions from in-game. Both are MCfunctions that take no arguments. The `tick()` function is called every game tick, while the `startup()` function is called once when the datapack is loaded.
 
 ## Syntax
 
