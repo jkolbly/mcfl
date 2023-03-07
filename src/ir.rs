@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 use crate::mcfunction::ScoreboardOperation;
 
@@ -28,6 +28,16 @@ impl IR {
     }
 }
 
+impl Display for IR {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for (name, func) in &self.functions {
+            writeln!(f, "{}{}{}", "-".repeat(20), name, "-".repeat(20))?;
+            write!(f, "{}", func)?;
+        }
+        Ok(())
+    }
+}
+
 /// An IRFunc is a one-dimensional set of instructions that are higher level than Minecraft but lower level than MCFL
 ///
 /// Note that the memory structure of an MCFL program in Minecraft is as follows:
@@ -51,6 +61,15 @@ impl IRFunc {
     }
 }
 
+impl Display for IRFunc {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for node in &self.nodes {
+            writeln!(f, "{}", node)?;
+        }
+        Ok(())
+    }
+}
+
 /// An IR instruction
 pub enum IRNode {
     /// Set a named int with a name and value.
@@ -66,4 +85,17 @@ pub enum IRNode {
         rhs: String,
         operation: ScoreboardOperation,
     },
+}
+
+impl Display for IRNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IRNode::SetIntNamed { name, value } => write!(f, "SetIntNamed {} = {}", name, value),
+            IRNode::BinaryOperationIntNamed {
+                lhs,
+                rhs,
+                operation,
+            } => write!(f, "BinaryOperationIntNamed {} {} {}", lhs, operation, rhs),
+        }
+    }
 }
