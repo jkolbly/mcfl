@@ -11,7 +11,17 @@ use crate::{
 pub fn compile(ast: &Tree<ASTNode>) -> Result<IR, CompileError> {
     let mut ir = IR::new();
 
+    let funcs = get_mcfuncs(ast)?;
+
+    for id in funcs.values() {
+        compile_mcfunc(&mut ir, ast, *id)?;
+    }
+
     Ok(ir)
+}
+
+fn compile_mcfunc(ir: &mut IR, ast: &Tree<ASTNode>, mcfunc: NodeId) -> Result<(), CompileError> {
+    todo!()
 }
 
 /// Find all the mcfunctions that must be compiled in an AST. Resulting HashMap maps mfunction names (as they appear in MCFL source) to node ID's.
