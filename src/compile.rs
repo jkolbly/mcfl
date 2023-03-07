@@ -20,6 +20,7 @@ pub fn compile(ast: &Tree<ASTNode>) -> Result<IR, CompileError> {
     Ok(ir)
 }
 
+/// Compile a single mcfunction and add it to the IR.
 fn compile_mcfunc(ir: &mut IR, ast: &Tree<ASTNode>, mcfunc: NodeId) -> Result<(), CompileError> {
     todo!()
 }
