@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     ast::{ASTNode, ASTNodeType},
     error::CompileError,
-    ir::{IRFunc, IR},
+    ir::IR,
     tree::{NodeId, Tree},
 };
 
@@ -13,16 +13,15 @@ pub fn compile(ast: &Tree<ASTNode>) -> Result<IR, CompileError> {
 
     let funcs = get_mcfuncs(ast)?;
 
-    for (name, id) in funcs {
-        let compiled = compile_mcfunc(ast, id)?;
-        ir.add_func(compiled, name);
+    for id in funcs.values() {
+        compile_mcfunc(&mut ir, ast, *id)?;
     }
 
     Ok(ir)
 }
 
-/// Compile a single mcfunction to an IRFunc.
-fn compile_mcfunc(ast: &Tree<ASTNode>, mcfunc: NodeId) -> Result<IRFunc, CompileError> {
+/// Compile a single mcfunction and add it to the IR.
+fn compile_mcfunc(ir: &mut IR, ast: &Tree<ASTNode>, mcfunc: NodeId) -> Result<(), CompileError> {
     todo!()
 }
 
