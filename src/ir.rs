@@ -21,6 +21,11 @@ impl IR {
             functions: HashMap::new(),
         }
     }
+
+    /// Add an IRFunc to this IR under a given name
+    pub fn add_func(&mut self, func: IRFunc, name: String) {
+        self.functions.insert(name, func);
+    }
 }
 
 /// An IRFunc is a one-dimensional set of instructions that are higher level than Minecraft but lower level than MCFL
