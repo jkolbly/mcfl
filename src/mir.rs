@@ -11,6 +11,12 @@ pub struct MIRNode {
     pub context: StringContext,
 }
 
+impl MIRNode {
+    pub fn new(node_type: MIRNodeType, context: StringContext) -> MIRNode {
+        MIRNode { node_type, context }
+    }
+}
+
 /// Stores the types of MIR nodes and their associated data
 pub enum MIRNodeType {
     /// The root of a program. Should only appear once in the tree
