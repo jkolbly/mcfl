@@ -1,4 +1,5 @@
 use crate::ast::{StringContext, VarType};
+use std::fmt::Debug;
 
 /// A node in the MIR (MCFL intermediate representation)
 ///
@@ -11,6 +12,13 @@ pub struct MIRNode {
     pub context: StringContext,
 }
 
+impl Debug for MIRNode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:?}", self.node_type))?;
+        write!(f, "")
+    }
+}
+
 impl MIRNode {
     pub fn new(node_type: MIRNodeType, context: StringContext) -> MIRNode {
         MIRNode { node_type, context }
@@ -18,6 +26,7 @@ impl MIRNode {
 }
 
 /// Stores the types of MIR nodes and their associated data
+#[derive(Debug)]
 pub enum MIRNodeType {
     /// The root of a program. Should only appear once in the tree
     Program,
@@ -31,6 +40,7 @@ pub enum MIRNodeType {
 }
 
 /// A variable with an identifier and type
+#[derive(Debug)]
 pub struct Variable {
     /// The variable name, as will appear in the final datapack
     pub name: String,

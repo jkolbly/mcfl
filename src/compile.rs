@@ -104,6 +104,10 @@ fn get_mir_node(
 pub fn compile(ast: &Tree<ASTNode>) -> Result<IR, CompileError> {
     let mut ir = IR::new();
 
+    let mir = generate_mir(ast)?;
+
+    println!("{:?}", mir);
+
     let funcs = get_mcfuncs(ast)?;
 
     for id in funcs.values() {
