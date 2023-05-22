@@ -19,6 +19,7 @@ mod error;
 mod id_tracker;
 mod ir;
 mod mcfunction;
+mod mir;
 mod parse;
 mod tree;
 
