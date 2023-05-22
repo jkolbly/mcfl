@@ -26,7 +26,7 @@ pub enum MIRNodeType {
     Function {
         name: String,
         params: Vec<Variable>,
-        return_var: Variable,
+        return_var: Option<Variable>,
     },
 }
 
