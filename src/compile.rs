@@ -91,6 +91,10 @@ fn get_mir_node(
         if let Some(nid) = mirnode {
             mir.append_to(nid, new_id)?;
         }
+
+        for c in ast.get_children(node)? {
+            get_mir_node(ast, *c, mir, Some(new_id))?;
+        }
     }
 
     Ok(())
