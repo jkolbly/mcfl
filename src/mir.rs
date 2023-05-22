@@ -33,8 +33,8 @@ pub enum MIRNodeType {
 /// A variable with an identifier and type
 pub struct Variable {
     /// The variable name, as will appear in the final datapack
-    name: String,
+    pub name: String,
 
     /// The variable's type
-    var_type: VarType,
+    pub var_type: VarType,
 }
