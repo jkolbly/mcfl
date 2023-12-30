@@ -1,5 +1,5 @@
 mcfunction startup {
-    int f = f; // TODO: This shouldn't compile
+    // int f = f; // TODO: This shouldn't compile
 
     global int counter = 0;
     int seconds = 0;
