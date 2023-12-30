@@ -62,7 +62,7 @@ fn get_mir_node(
     if scopes.is_empty() {
         scopes.push(Vec::new());
     }
-    let mut scope_index = scopes.len() - 1;
+    let scope_index = scopes.len() - 1;
 
     // Tracks whether we've added a new scope that we need to pop from the stack at the end.
     let mut scope_added: bool = false;
