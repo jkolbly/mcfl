@@ -45,7 +45,6 @@ fn find_in_scope(scopes: &Vec<Vec<Variable>>, name: &str) -> Option<Variable> {
 }
 
 /// Recursively generate the MIR node and descendents for a given AST node and add them to the given MIR tree.
-/// Note that scopes is assumed to be nonempty.
 fn get_mir_node(
     ast: &Tree<ASTNode>,
     node: NodeId,
