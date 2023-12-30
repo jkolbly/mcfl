@@ -31,20 +31,60 @@ pub enum MIRNodeType {
     /// The root of a program. Should only appear once in the tree
     Program,
 
-    /// A function or mcfunction that is not recursive
+    /// A function or mcfunction
     Function {
         name: String,
         params: Vec<Variable>,
         return_var: Option<Variable>,
+        is_recursive: bool,
     },
+
+    /// The identifier of a variable
+    VarIdentifier { var: Variable },
+
+    /// A return statement from a function
+    ReturnStatement,
+
+    /// An assignment statement. Note that the second child is the variable identifier being assigned
+    AssignmentStatement,
+
+    /// An addition expression
+    Addition,
+    /// A subtraction expression
+    Subtraction,
+    /// A multiplication expression
+    Multiplication,
+    /// A division expression
+    Division,
+    /// A modulo expression
+    Modulo,
+
+    /// A number literal expression
+    NumberLiteral { value: i32 },
+
+    /// A function call expression
+    FunctionCall { id: FunctionID },
 }
 
 /// A variable with an identifier and type
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Variable {
-    /// The variable name, as will appear in the final datapack
+    /// The variable name in MCFL code
     pub name: String,
+
+    /// The variable name in the final datapack
+    pub name_internal: String,
 
     /// The variable's type
     pub var_type: VarType,
+}
+
+/// Uniquely references a datapack function
+#[derive(Debug, Clone)]
+pub struct FunctionID {
+    /// The function name in MCFL code
+    pub name: String,
+
+    /// The function name in the final datapack
+    pub name_internal: String,
 }
