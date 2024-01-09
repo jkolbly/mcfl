@@ -1,4 +1,4 @@
-use crate::ast::StringContext;
+use crate::ast::{StringContext, VarType};
 use crate::parse::Rule;
 use crate::tree::NodeId;
 use pest::error::Error;
@@ -49,6 +49,16 @@ pub enum CompileError {
         received: usize,
         context: StringContext,
     },
+    MismatchedReturnType {
+        func_name: String,
+        expected: VarType,
+        received: VarType,
+        context: StringContext,
+    },
+    ReturnFromVoid {
+        func_name: String,
+        context: StringContext,
+    },
 }
 
 impl std::fmt::Debug for CompileError {
@@ -97,6 +107,25 @@ impl std::fmt::Debug for CompileError {
                 &format!(
                     "Function {} takes {} arguments but {} were given",
                     func_name, expected, received
+                ),
+            ),
+            Self::MismatchedReturnType {
+                func_name,
+                expected,
+                received,
+                context,
+            } => include_pos(
+                context,
+                &format!(
+                    "Function {} should return {} but returned {}",
+                    func_name, expected, received
+                ),
+            ),
+            Self::ReturnFromVoid { func_name, context } => include_pos(
+                context,
+                &format!(
+                    "Function {} has no return type but a value was returned",
+                    func_name
                 ),
             ),
         }
