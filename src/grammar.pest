@@ -20,7 +20,7 @@ block = { "{" ~ statement* ~ "}" }
 
 statement = _{ (assignment | variable_declaration | return_statement) ~ ";" }
 
-return_statement = { return_keyword ~ expression }
+return_statement = { return_keyword ~ expression? }
 return_keyword = _{ "return" }
 
 assignment = { assignable ~ assignment_operator ~ expression }
