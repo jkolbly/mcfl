@@ -68,6 +68,14 @@ pub enum VarType {
     Int,
 }
 
+impl std::fmt::Display for VarType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            VarType::Int => write!(f, "int"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct VariableDeclaration {
     pub scope_modifier: ScopeModifier,
