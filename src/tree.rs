@@ -183,6 +183,22 @@ impl<T> Tree<T> {
         Ok(None)
     }
 
+    /// Recursively find a child of a node matching a particular predicate or `None` if none exists
+    pub fn find_child_recursive(
+        &self,
+        parent: NodeId,
+        f: &dyn Fn(NodeId, &T) -> bool,
+    ) -> Result<Option<NodeId>, TreeError> {
+        for child in self.get_children(parent)? {
+            if f(*child, self.get_node(*child)?) {
+                return Ok(Some(*child));
+            } else if let Some(grandchild) = self.find_child_recursive(*child, f)? {
+                return Ok(Some(grandchild));
+            }
+        }
+        Ok(None)
+    }
+
     /// Return whether or not a child for which `f` evaluates to `true` exists
     pub fn child_exists(
         &self,
