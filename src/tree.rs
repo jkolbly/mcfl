@@ -125,6 +125,11 @@ impl<T> Tree<T> {
         Ok(&self.get_treenode(parent)?.children)
     }
 
+    /// Returns whether a node has any children
+    pub fn has_children(&self, parent: NodeId) -> Result<bool, TreeError> {
+        Ok(!&self.get_children(parent)?.is_empty())
+    }
+
     /// Get the tree's root or error if there is none
     pub fn get_root(&self) -> Result<NodeId, TreeError> {
         match self.root {
