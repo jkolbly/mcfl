@@ -359,7 +359,7 @@ struct Node<T> {
     /// Empty if node has no children
     children: Vec<NodeId>,
 
-    /// The depth of this node in the tree. 0 if parent
+    /// The depth of this node in the tree. 0 if root
     depth: u32,
 
     /// The non-positional data for this node
