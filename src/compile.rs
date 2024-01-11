@@ -1,7 +1,7 @@
 use rand::distributions::{Alphanumeric, DistString};
 
 use crate::{
-    ast::{ASTNode, ASTNodeType},
+    ast::{ASTNode, ASTNodeType, VarType},
     error::CompileError,
     ir::IR,
     mir::{FunctionID, MIRNode, MIRNodeType, Variable},
@@ -203,13 +203,143 @@ fn get_mir_node(
     Ok(())
 }
 
+/// Verify that all return types in a MIR match the function signature.
+fn check_return_types(mir: &Tree<MIRNode>) -> Result<(), CompileError> {
+    for func_node in mir.get_children(mir.get_root()?)? {
+        let MIRNodeType::Function {
+            name,
+            params,
+            return_var,
+            is_recursive,
+        } = &mir.get_node(*func_node)?.node_type
+        else {
+            unreachable!()
+        };
+        let ret_nodes = mir.find_children_recursive(*func_node, &|_, node| -> bool {
+            matches!(node.node_type, MIRNodeType::ReturnStatement)
+        })?;
+        match return_var {
+            Some(ret_var) => {
+                verify_return_reached(mir, *func_node)?; // Make sure a return value is always reached
+
+                // Check that return types match for all return statements
+                for ret_node in ret_nodes {
+                    let ret_expr_type = get_expression_type(mir, mir.get_first_child(ret_node)?)?;
+                    if ret_expr_type != ret_var.var_type {
+                        return Err(CompileError::MismatchedReturnType {
+                            func_name: name.to_string(),
+                            expected: ret_var.var_type,
+                            received: ret_expr_type,
+                            context: mir
+                                .get_node(mir.get_first_child(ret_node)?)?
+                                .context
+                                .clone(),
+                        });
+                    }
+                }
+            }
+            None => {
+                for ret_node in ret_nodes {
+                    if mir.has_children(ret_node)? {
+                        // A child indicates something is being returned
+                        return Err(CompileError::ReturnFromVoid {
+                            func_name: name.to_string(),
+                            context: mir
+                                .get_node(mir.get_first_child(ret_node)?)?
+                                .context
+                                .clone(),
+                        });
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Verify that a return expression is always reached in a code block
+fn verify_return_reached(mir: &Tree<MIRNode>, func_node: NodeId) -> Result<(), CompileError> {
+    match is_return_reached(mir, func_node)? {
+        true => Ok(()),
+        false => {
+            let MIRNodeType::Function {
+                name,
+                params: _,
+                return_var: _,
+                is_recursive: _,
+            } = &mir.get_node(func_node)?.node_type
+            else {
+                unreachable!()
+            };
+            Err(CompileError::NoReturnStatement {
+                func_name: name.to_string(),
+                context: mir.get_node(func_node)?.context.clone(),
+            })
+        }
+    }
+}
+
+/// Return whether a return expression is always reached in a code block
+fn is_return_reached(mir: &Tree<MIRNode>, block_node: NodeId) -> Result<bool, CompileError> {
+    // Algorithm: Start at end and move backwards until you hit a return statement.
+    //            If we hit a code block, check if one is guaranteed in the block.
+
+    if !mir.has_children(block_node)? {
+        return Ok(false);
+    }
+
+    let mut cur_node = mir.get_last_child(block_node).unwrap();
+    loop {
+        match &mir.get_node(cur_node)?.node_type {
+            MIRNodeType::Program => unreachable!(),
+            MIRNodeType::Function {
+                name: _,
+                params: _,
+                return_var: _,
+                is_recursive: _,
+            } => unreachable!(),
+            MIRNodeType::ReturnStatement => return Ok(true),
+            _ => {}
+        }
+
+        match mir.get_prev_sibling(cur_node)? {
+            Some(node_id) => cur_node = node_id,
+            None => break,
+        }
+    }
+
+    Ok(false)
+}
+
+fn get_expression_type(mir: &Tree<MIRNode>, expr_node: NodeId) -> Result<VarType, CompileError> {
+    match &mir.get_node(expr_node)?.node_type {
+        MIRNodeType::VarIdentifier { var } => Ok(var.var_type),
+        MIRNodeType::Addition
+        | MIRNodeType::Subtraction
+        | MIRNodeType::Multiplication
+        | MIRNodeType::Division
+        | MIRNodeType::Modulo => get_expression_type(mir, mir.get_first_child(expr_node)?),
+        MIRNodeType::NumberLiteral { value } => Ok(VarType::Int),
+        MIRNodeType::FunctionCall { id } => todo!(), // Need to find the function's return type
+        _ => unreachable!(),
+    }
+}
+
+/// Mark all recursive functions in a MIR tree as recursive.
+fn mark_recursive_funcs(mir: &mut Tree<MIRNode>) {
+    todo!();
+}
+
 /// Generate an IR (intermediate representation) from an AST (abstract syntax tree)
 pub fn compile(ast: &Tree<ASTNode>) -> Result<IR, CompileError> {
     println!("{:?}", ast);
 
-    let mir = generate_mir(ast)?;
+    let mut mir = generate_mir(ast)?;
 
     println!("{:?}", mir);
+
+    check_return_types(&mir)?;
+    mark_recursive_funcs(&mut mir);
 
     Ok(IR::new())
 }
