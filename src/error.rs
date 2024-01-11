@@ -59,6 +59,10 @@ pub enum CompileError {
         func_name: String,
         context: StringContext,
     },
+    NoReturnStatement {
+        func_name: String,
+        context: StringContext,
+    },
 }
 
 impl std::fmt::Debug for CompileError {
@@ -125,6 +129,13 @@ impl std::fmt::Debug for CompileError {
                 context,
                 &format!(
                     "Function {} has no return type but a value was returned",
+                    func_name
+                ),
+            ),
+            Self::NoReturnStatement { func_name, context } => include_pos(
+                context,
+                &format!(
+                    "Function {} has a return type but a return statement may not always be reached",
                     func_name
                 ),
             ),
