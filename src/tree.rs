@@ -174,6 +174,16 @@ impl<T> Tree<T> {
         }
     }
 
+    /// Get the next sibling of a node, or None if the node is a last child or has no parent
+    pub fn get_next_sibling(&self, node: NodeId) -> Result<Option<NodeId>, TreeError> {
+        Ok(self.get_treenode(node)?.next_sibling)
+    }
+
+    /// Get the previous sibling of a node, or None if the node is a first child or has no parent
+    pub fn get_prev_sibling(&self, node: NodeId) -> Result<Option<NodeId>, TreeError> {
+        Ok(self.get_treenode(node)?.previous_sibling)
+    }
+
     /// Find the first child of a node for which `f` evaluates to `true` or `None` if all evaluate to `false`
     pub fn find_child(
         &self,
