@@ -326,7 +326,7 @@ fn get_expression_type(mir: &Tree<MIRNode>, expr_node: NodeId) -> Result<VarType
 }
 
 /// Mark all recursive functions in a MIR tree as recursive.
-fn mark_recursive_funcs(mir: &mut Tree<MIRNode>) {
+fn mark_recursive_funcs(mir: &mut Tree<MIRNode>) -> Result<(), CompileError> {
     todo!();
 }
 
@@ -339,7 +339,7 @@ pub fn compile(ast: &Tree<ASTNode>) -> Result<IR, CompileError> {
     println!("{:?}", mir);
 
     check_return_types(&mir)?;
-    mark_recursive_funcs(&mut mir);
+    mark_recursive_funcs(&mut mir)?;
 
     Ok(IR::new())
 }
