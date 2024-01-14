@@ -330,13 +330,29 @@ fn mark_recursive_funcs(mir: &mut Tree<MIRNode>) -> Result<(), CompileError> {
     todo!();
 }
 
+/// Get a table mapping String function ID's (as appears in MCFL) to function nodes in the MIR
+fn get_func_table(mir: &Tree<MIRNode>) -> Result<HashMap<String, NodeId>, CompileError> {
+    let mut map = HashMap::new();
+    for child in mir.get_children(mir.get_root()?)? {
+        match &mir.get_node(*child)?.node_type {
+            MIRNodeType::Function { name, .. } => {
+                map.insert(name.to_string(), *child);
+            }
+            _ => unreachable!(),
+        }
+    }
+    Ok(map)
+}
+
 /// Generate an IR (intermediate representation) from an AST (abstract syntax tree)
 pub fn compile(ast: &Tree<ASTNode>) -> Result<IR, CompileError> {
     println!("{:?}", ast);
 
     let mut mir = generate_mir(ast)?;
+    let func_table = get_func_table(&mir)?;
 
     println!("{:?}", mir);
+    println!("{:?}", func_table);
 
     check_return_types(&mir)?;
     mark_recursive_funcs(&mut mir)?;
