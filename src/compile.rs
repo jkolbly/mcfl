@@ -467,6 +467,10 @@ fn get_func_table(mir: &Tree<MIRNode>) -> Result<HashMap<String, NodeId>, Compil
     Ok(map)
 }
 
+fn generate_ir(mir: &Tree<MIRNode>) -> Result<IR, CompileError> {
+    todo!()
+}
+
 /// Generate an IR (intermediate representation) from an AST (abstract syntax tree)
 pub fn compile(ast: &Tree<ASTNode>) -> Result<IR, CompileError> {
     println!("{:?}", ast);
@@ -479,5 +483,7 @@ pub fn compile(ast: &Tree<ASTNode>) -> Result<IR, CompileError> {
     check_return_types(&mir)?;
     mark_recursive_funcs(&mut mir, &func_table)?;
 
-    Ok(IR::new())
+    let ir = generate_ir(&mir)?;
+
+    Ok(ir)
 }
