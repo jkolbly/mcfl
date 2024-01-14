@@ -352,7 +352,6 @@ pub fn compile(ast: &Tree<ASTNode>) -> Result<IR, CompileError> {
     let func_table = get_func_table(&mir)?;
 
     println!("{:?}", mir);
-    println!("{:?}", func_table);
 
     check_return_types(&mir)?;
     mark_recursive_funcs(&mut mir)?;
