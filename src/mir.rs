@@ -63,7 +63,7 @@ pub enum MIRNodeType {
     NumberLiteral { value: i32 },
 
     /// A function call expression
-    FunctionCall { id: FunctionID },
+    FunctionCall { id: String },
 }
 
 /// A variable with an identifier and type
@@ -77,14 +77,4 @@ pub struct Variable {
 
     /// The variable's type
     pub var_type: VarType,
-}
-
-/// Uniquely references a datapack function
-#[derive(Debug, Clone)]
-pub struct FunctionID {
-    /// The function name in MCFL code
-    pub name: String,
-
-    /// The function name in the final datapack
-    pub name_internal: String,
 }

@@ -6,7 +6,7 @@ use crate::{
     ast::{ASTNode, ASTNodeType, VarType},
     error::CompileError,
     ir::IR,
-    mir::{FunctionID, MIRNode, MIRNodeType, Variable},
+    mir::{MIRNode, MIRNodeType, Variable},
     tree::{NodeId, Tree},
 };
 
@@ -159,12 +159,7 @@ fn get_mir_node(
         ASTNodeType::Divide => Some(MIRNodeType::Division),
         ASTNodeType::Modulo => Some(MIRNodeType::Modulo),
         ASTNodeType::ReturnStatement => Some(MIRNodeType::ReturnStatement), // Type will be checked for validity later
-        ASTNodeType::FunctionCall { id } => Some(MIRNodeType::FunctionCall {
-            id: FunctionID {
-                name: id.to_string(),
-                name_internal: id.to_string(),
-            },
-        }),
+        ASTNodeType::FunctionCall { id } => Some(MIRNodeType::FunctionCall { id: id.to_string() }),
     };
 
     // Assignment children must be looked through in opposite order so that 'int a = a' doesn't compile
@@ -339,13 +334,13 @@ fn mark_recursive_funcs(
         let mut calls: HashSet<NodeId> = HashSet::new();
         for child in mir.iter_subtree(*func_node)? {
             if let MIRNodeType::FunctionCall { id } = &mir.get_node(child)?.node_type {
-                match func_table.get(&id.name) {
+                match func_table.get(id) {
                     Some(called_func_id) => {
                         calls.insert(*called_func_id);
                     }
                     None => {
                         return Err(CompileError::UnknownFunction {
-                            name: id.name.to_string(),
+                            name: id.to_string(),
                             context: mir.get_node(child)?.context.clone(),
                         })
                     }
