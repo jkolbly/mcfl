@@ -214,6 +214,38 @@ impl<T> Tree<T> {
         Ok(None)
     }
 
+    /// Find the children of a node matching a particular predicate
+    pub fn find_children(
+        &self,
+        parent: NodeId,
+        f: &dyn Fn(NodeId, &T) -> bool,
+    ) -> Result<Vec<NodeId>, TreeError> {
+        let mut matching_children = Vec::new();
+        for child in self.get_children(parent)? {
+            if f(*child, self.get_node(*child)?) {
+                matching_children.push(*child);
+            }
+        }
+        Ok(matching_children)
+    }
+
+    /// Recursively find all children of a node matching a particular predicate
+    pub fn find_children_recursive(
+        &self,
+        parent: NodeId,
+        f: &dyn Fn(NodeId, &T) -> bool,
+    ) -> Result<Vec<NodeId>, TreeError> {
+        let mut matching_children = Vec::new();
+        for child in self.get_children(parent)? {
+            if f(*child, self.get_node(*child)?) {
+                matching_children.push(*child)
+            }
+            let mut grandchildren = self.find_children_recursive(*child, f)?;
+            matching_children.append(&mut grandchildren);
+        }
+        Ok(matching_children)
+    }
+
     /// Return whether or not a child for which `f` evaluates to `true` exists
     pub fn child_exists(
         &self,
