@@ -1,5 +1,36 @@
-use crate::ast::{StringContext, VarType};
-use std::fmt::Debug;
+use crate::{
+    ast::{StringContext, VarType},
+    error::CompileError,
+    tree::{NodeId, Tree},
+};
+use std::{collections::HashMap, fmt::Debug};
+
+/// A container for the MIR that contains the tree as well as some other useful data
+pub struct MIR {
+    pub tree: Tree<MIRNode>,
+    pub func_table: HashMap<String, NodeId>,
+}
+
+impl MIR {
+    pub fn new(tree: Tree<MIRNode>) -> Result<MIR, CompileError> {
+        let func_table = get_func_table(&tree)?;
+        Ok(MIR { tree, func_table })
+    }
+}
+
+/// Get a table mapping String function ID's (as appears in MCFL) to function nodes in the MIR
+fn get_func_table(mir_tree: &Tree<MIRNode>) -> Result<HashMap<String, NodeId>, CompileError> {
+    let mut map = HashMap::new();
+    for child in mir_tree.get_children(mir_tree.get_root()?)? {
+        match &mir_tree.get_node(*child)?.node_type {
+            MIRNodeType::Function { name, .. } => {
+                map.insert(name.to_string(), *child);
+            }
+            _ => unreachable!(),
+        }
+    }
+    Ok(map)
+}
 
 /// A node in the MIR (MCFL intermediate representation)
 ///
