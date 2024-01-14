@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use rand::distributions::{Alphanumeric, DistString};
 
 use crate::{
@@ -326,8 +328,134 @@ fn get_expression_type(mir: &Tree<MIRNode>, expr_node: NodeId) -> Result<VarType
 }
 
 /// Mark all recursive functions in a MIR tree as recursive.
-fn mark_recursive_funcs(mir: &mut Tree<MIRNode>) -> Result<(), CompileError> {
-    todo!();
+fn mark_recursive_funcs(
+    mir: &mut Tree<MIRNode>,
+    func_table: &HashMap<String, NodeId>,
+) -> Result<(), CompileError> {
+    // Maps function nodes to a list of all functions called by that function
+    let mut func_calls: HashMap<NodeId, HashSet<NodeId>> = HashMap::new();
+
+    for func_node in func_table.values() {
+        let mut calls: HashSet<NodeId> = HashSet::new();
+        for child in mir.iter_subtree(*func_node)? {
+            if let MIRNodeType::FunctionCall { id } = &mir.get_node(child)?.node_type {
+                match func_table.get(&id.name) {
+                    Some(called_func_id) => {
+                        calls.insert(*called_func_id);
+                    }
+                    None => {
+                        return Err(CompileError::UnknownFunction {
+                            name: id.name.to_string(),
+                            context: mir.get_node(child)?.context.clone(),
+                        })
+                    }
+                }
+            }
+        }
+        func_calls.insert(*func_node, calls);
+    }
+
+    // The functions that have already been marked as (non)recursive
+    let mut known_recursive: HashSet<NodeId> = HashSet::new();
+    let mut known_nonrecursive: HashSet<NodeId> = HashSet::new();
+
+    for func_node in func_table.values() {
+        mark_recursive_funcs_helper(
+            &func_calls,
+            *func_node,
+            &mut Vec::new(),
+            &mut known_recursive,
+            &mut known_nonrecursive,
+        )?;
+    }
+
+    println!(
+        "Nonrecursive: {:?}",
+        known_nonrecursive
+            .iter()
+            .map(|node| {
+                let MIRNodeType::Function { name, .. } = &mir.get_node(*node).unwrap().node_type
+                else {
+                    unreachable!()
+                };
+                name
+            })
+            .collect::<Vec<&String>>()
+    );
+    println!(
+        "Recursive: {:?}",
+        known_recursive
+            .iter()
+            .map(|node| {
+                let MIRNodeType::Function { name, .. } = &mir.get_node(*node).unwrap().node_type
+                else {
+                    unreachable!()
+                };
+                name
+            })
+            .collect::<Vec<&String>>()
+    );
+
+    for recursive in known_recursive {
+        let MIRNodeType::Function {
+            name: _,
+            params: _,
+            return_var: _,
+            is_recursive,
+        } = &mut mir.get_node_mut(recursive)?.node_type
+        else {
+            unreachable!()
+        };
+        *is_recursive = true;
+    }
+
+    Ok(())
+}
+
+/// Update a set of known recursive functions by adding all functions in loops called inside `func_node`
+fn mark_recursive_funcs_helper(
+    func_calls: &HashMap<NodeId, HashSet<NodeId>>,
+    func_node: NodeId,
+    callstack: &mut Vec<NodeId>,
+    known_recursive: &mut HashSet<NodeId>,
+    known_nonrecursive: &mut HashSet<NodeId>,
+) -> Result<(), CompileError> {
+    // If we already know this function isn't recursive, skip it
+    if known_nonrecursive.contains(&func_node) {
+        return Ok(());
+    }
+
+    // If we've found a loop, everything in the loop is recursive
+    if callstack.contains(&func_node) {
+        while let Some(recursive) = callstack.pop() {
+            known_recursive.insert(recursive);
+
+            // If we've looked at an entire loop, we're done
+            if recursive == func_node {
+                break;
+            }
+        }
+        return Ok(());
+    }
+
+    // Otherwise, keep searching
+    callstack.push(func_node);
+
+    for call in func_calls.get(&func_node).unwrap() {
+        mark_recursive_funcs_helper(
+            func_calls,
+            *call,
+            callstack,
+            known_recursive,
+            known_nonrecursive,
+        )?;
+    }
+
+    if !known_recursive.contains(&func_node) {
+        known_nonrecursive.insert(func_node);
+    }
+
+    Ok(())
 }
 
 /// Get a table mapping String function ID's (as appears in MCFL) to function nodes in the MIR
@@ -354,7 +482,7 @@ pub fn compile(ast: &Tree<ASTNode>) -> Result<IR, CompileError> {
     println!("{:?}", mir);
 
     check_return_types(&mir)?;
-    mark_recursive_funcs(&mut mir)?;
+    mark_recursive_funcs(&mut mir, &func_table)?;
 
     Ok(IR::new())
 }
