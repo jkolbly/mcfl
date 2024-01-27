@@ -205,9 +205,9 @@ fn check_return_types(mir: &MIR) -> Result<(), CompileError> {
     for func_node in mir.func_table.values() {
         let MIRNodeType::Function {
             name,
-            params,
+            params: _,
             return_var,
-            is_recursive,
+            is_recursive: _,
         } = &mir.tree.get_node(*func_node)?.node_type
         else {
             unreachable!()
@@ -333,7 +333,7 @@ fn get_expression_type(mir: &MIR, expr_node: NodeId) -> Result<Option<VarType>, 
         | MIRNodeType::Multiplication
         | MIRNodeType::Division
         | MIRNodeType::Modulo => get_expression_type(mir, mir.tree.get_first_child(expr_node)?),
-        MIRNodeType::NumberLiteral { value } => Ok(Some(VarType::Int)),
+        MIRNodeType::NumberLiteral { value: _ } => Ok(Some(VarType::Int)),
         MIRNodeType::FunctionCall { id } => {
             let MIRNodeType::Function {
                 name: _,
