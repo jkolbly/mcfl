@@ -6,7 +6,7 @@ use crate::{
     ast::{ASTNode, ASTNodeType, VarType},
     error::CompileError,
     ir::IR,
-    mir::{MIRNode, MIRNodeType, Variable, MIR},
+    mir::{MIRNode, MIRNodeType, Mir, Variable},
     tree::{NodeId, Tree},
 };
 
@@ -26,12 +26,12 @@ fn random_name() -> String {
 }
 
 /// Create a MIR (MCFL intermediate representation) from an AST (abstract syntax tree)
-fn generate_mir(ast: &Tree<ASTNode>) -> Result<MIR, CompileError> {
+fn generate_mir(ast: &Tree<ASTNode>) -> Result<Mir, CompileError> {
     let mut mir_tree: Tree<MIRNode> = Tree::new();
 
     get_mir_node(ast, ast.get_root()?, &mut mir_tree, None, &mut vec![])?;
 
-    MIR::new(mir_tree)
+    Mir::new(mir_tree)
 }
 
 /// Find the a variable matching a particular name from a stack of scopes, or None if no such variable exists
@@ -201,7 +201,7 @@ fn get_mir_node(
 }
 
 /// Verify that all return types in a MIR match the function signature.
-fn check_return_types(mir: &MIR) -> Result<(), CompileError> {
+fn check_return_types(mir: &Mir) -> Result<(), CompileError> {
     for func_node in mir.func_table.values() {
         let MIRNodeType::Function {
             name,
@@ -272,7 +272,7 @@ fn check_return_types(mir: &MIR) -> Result<(), CompileError> {
 }
 
 /// Verify that a return expression is always reached in a code block
-fn verify_return_reached(mir: &MIR, func_node: NodeId) -> Result<(), CompileError> {
+fn verify_return_reached(mir: &Mir, func_node: NodeId) -> Result<(), CompileError> {
     match is_return_reached(mir, func_node)? {
         true => Ok(()),
         false => {
@@ -294,7 +294,7 @@ fn verify_return_reached(mir: &MIR, func_node: NodeId) -> Result<(), CompileErro
 }
 
 /// Return whether a return expression is always reached in a code block
-fn is_return_reached(mir: &MIR, block_node: NodeId) -> Result<bool, CompileError> {
+fn is_return_reached(mir: &Mir, block_node: NodeId) -> Result<bool, CompileError> {
     // Algorithm: Start at end and move backwards until you hit a return statement.
     //            If we hit a code block, check if one is guaranteed in the block.
 
@@ -325,7 +325,7 @@ fn is_return_reached(mir: &MIR, block_node: NodeId) -> Result<bool, CompileError
     Ok(false)
 }
 
-fn get_expression_type(mir: &MIR, expr_node: NodeId) -> Result<Option<VarType>, CompileError> {
+fn get_expression_type(mir: &Mir, expr_node: NodeId) -> Result<Option<VarType>, CompileError> {
     match &mir.tree.get_node(expr_node)?.node_type {
         MIRNodeType::VarIdentifier { var } => Ok(Some(var.var_type)),
         MIRNodeType::Addition
@@ -361,7 +361,7 @@ fn get_expression_type(mir: &MIR, expr_node: NodeId) -> Result<Option<VarType>, 
 }
 
 /// Mark all recursive functions in a MIR tree as recursive.
-fn mark_recursive_funcs(mir: &mut MIR) -> Result<(), CompileError> {
+fn mark_recursive_funcs(mir: &mut Mir) -> Result<(), CompileError> {
     // Maps function nodes to a list of all functions called by that function
     let mut func_calls: HashMap<NodeId, HashSet<NodeId>> = HashMap::new();
 
@@ -490,7 +490,7 @@ fn mark_recursive_funcs_helper(
     Ok(())
 }
 
-fn generate_ir(mir: &MIR) -> Result<IR, CompileError> {
+fn generate_ir(mir: &Mir) -> Result<IR, CompileError> {
     todo!()
 }
 

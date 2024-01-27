@@ -6,15 +6,15 @@ use crate::{
 use std::{collections::HashMap, fmt::Debug};
 
 /// A container for the MIR that contains the tree as well as some other useful data
-pub struct MIR {
+pub struct Mir {
     pub tree: Tree<MIRNode>,
     pub func_table: HashMap<String, NodeId>,
 }
 
-impl MIR {
-    pub fn new(tree: Tree<MIRNode>) -> Result<MIR, CompileError> {
+impl Mir {
+    pub fn new(tree: Tree<MIRNode>) -> Result<Mir, CompileError> {
         let func_table = get_func_table(&tree)?;
-        Ok(MIR { tree, func_table })
+        Ok(Mir { tree, func_table })
     }
 }
 
