@@ -223,19 +223,31 @@ fn check_return_types(mir: &MIR) -> Result<(), CompileError> {
 
                 // Check that return types match for all return statements
                 for ret_node in ret_nodes {
-                    let ret_expr_type =
-                        get_expression_type(mir, mir.tree.get_first_child(ret_node)?)?;
-                    if ret_expr_type != ret_var.var_type {
-                        return Err(CompileError::MismatchedReturnType {
-                            func_name: name.to_string(),
-                            expected: ret_var.var_type,
-                            received: ret_expr_type,
-                            context: mir
-                                .tree
-                                .get_node(mir.tree.get_first_child(ret_node)?)?
-                                .context
-                                .clone(),
-                        });
+                    let ret_expr_type = match mir.tree.get_first_child(ret_node) {
+                        Ok(ret_child) => get_expression_type(mir, ret_child)?,
+                        Err(_) => {
+                            return Err(CompileError::EmptyReturnStatement {
+                                func_name: name.to_string(),
+                                context: mir.tree.get_node(ret_node)?.context.clone(),
+                            })
+                        }
+                    };
+                    match ret_expr_type {
+                        Some(ret_type) => {
+                            if ret_type != ret_var.var_type {
+                                return Err(CompileError::MismatchedReturnType {
+                                    func_name: name.to_string(),
+                                    expected: ret_var.var_type,
+                                    received: ret_type,
+                                    context: mir
+                                        .tree
+                                        .get_node(mir.tree.get_first_child(ret_node)?)?
+                                        .context
+                                        .clone(),
+                                });
+                            }
+                        }
+                        None => unreachable!("A return type of None should have been caught by the compiler in get_expression_type"),
                     }
                 }
             }
@@ -313,16 +325,37 @@ fn is_return_reached(mir: &MIR, block_node: NodeId) -> Result<bool, CompileError
     Ok(false)
 }
 
-fn get_expression_type(mir: &MIR, expr_node: NodeId) -> Result<VarType, CompileError> {
+fn get_expression_type(mir: &MIR, expr_node: NodeId) -> Result<Option<VarType>, CompileError> {
     match &mir.tree.get_node(expr_node)?.node_type {
-        MIRNodeType::VarIdentifier { var } => Ok(var.var_type),
+        MIRNodeType::VarIdentifier { var } => Ok(Some(var.var_type)),
         MIRNodeType::Addition
         | MIRNodeType::Subtraction
         | MIRNodeType::Multiplication
         | MIRNodeType::Division
         | MIRNodeType::Modulo => get_expression_type(mir, mir.tree.get_first_child(expr_node)?),
-        MIRNodeType::NumberLiteral { value } => Ok(VarType::Int),
-        MIRNodeType::FunctionCall { id } => todo!(), // Need to find the function's return type
+        MIRNodeType::NumberLiteral { value } => Ok(Some(VarType::Int)),
+        MIRNodeType::FunctionCall { id } => {
+            let MIRNodeType::Function {
+                name: _,
+                params: _,
+                return_var,
+                is_recursive: _,
+            } = &mir
+                .tree
+                .get_node(*mir.func_table.get(id).unwrap())?
+                .node_type
+            else {
+                unreachable!()
+            };
+            // Ok(return_var.as_ref().map(|var| var.var_type))
+            match return_var {
+                Some(var) => Ok(Some(var.var_type)),
+                None => Err(CompileError::UsingVoidReturn {
+                    func_name: id.to_string(),
+                    context: mir.tree.get_node(expr_node)?.context.clone(),
+                }),
+            }
+        }
         _ => unreachable!(),
     }
 }
