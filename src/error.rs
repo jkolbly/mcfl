@@ -63,6 +63,14 @@ pub enum CompileError {
         func_name: String,
         context: StringContext,
     },
+    EmptyReturnStatement {
+        func_name: String,
+        context: StringContext,
+    },
+    UsingVoidReturn {
+        func_name: String,
+        context: StringContext,
+    },
 }
 
 impl std::fmt::Debug for CompileError {
@@ -136,6 +144,20 @@ impl std::fmt::Debug for CompileError {
                 context,
                 &format!(
                     "Function {} has a return type but a return statement may not always be reached",
+                    func_name
+                ),
+            ),
+            Self::EmptyReturnStatement { func_name, context } => include_pos(
+                context, 
+                &format!(
+                    "Function {} has a return statement but an empty return statement was found",
+                    func_name
+                ),
+            ),
+            Self::UsingVoidReturn { func_name, context } => include_pos(
+                context,
+                &format!(
+                    "Function {} has no return value but it is used in an expression",
                     func_name
                 ),
             ),
