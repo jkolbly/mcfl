@@ -148,7 +148,7 @@ impl std::fmt::Debug for CompileError {
                 ),
             ),
             Self::EmptyReturnStatement { func_name, context } => include_pos(
-                context, 
+                context,
                 &format!(
                     "Function {} has a return statement but an empty return statement was found",
                     func_name
