@@ -355,6 +355,43 @@ fn get_expression_type(mir: &Mir, expr_node: NodeId) -> Result<VarType, CompileE
     }
 }
 
+fn check_assignment_types(mir: &Mir) -> Result<(), CompileError> {
+    // Maps expected expression nodes to the variable being assigned
+    let mut assignments: HashMap<NodeId, Variable> = HashMap::new();
+
+    // Put all assignment statements into the assignments map
+    let assignment_statements = mir
+        .tree
+        .find_children_recursive(mir.tree.get_root()?, &|_, node| {
+            matches!(node.node_type, MIRNodeType::AssignmentStatement)
+        })?;
+    for assign_stmnt in assignment_statements {
+        let assigned_identifier = mir.tree.get_node(mir.tree.get_last_child(assign_stmnt)?)?;
+        if let MIRNodeType::VarIdentifier { var } = &assigned_identifier.node_type {
+            assignments.insert(mir.tree.get_first_child(assign_stmnt)?, var.clone());
+        } else {
+            unreachable!(
+                "An assignment expression must have a VarIdentifier as its last (second) child"
+            )
+        }
+    }
+
+    // Check that the expressions in the assignments map match their expected type
+    for (expr, var) in assignments {
+        let expr_type = get_expression_type(mir, expr)?;
+        if expr_type != var.var_type {
+            return Err(CompileError::MismatchedAssignmentType {
+                var_id: var.name,
+                expected: var.var_type,
+                received: expr_type,
+                context: mir.tree.get_node(expr)?.context.clone(),
+            });
+        }
+    }
+
+    Ok(())
+}
+
 /// Mark all recursive functions in a MIR tree as recursive.
 fn mark_recursive_funcs(mir: &mut Mir) -> Result<(), CompileError> {
     // Maps function nodes to a list of all functions called by that function
@@ -498,6 +535,7 @@ pub fn compile(ast: &Tree<ASTNode>) -> Result<IR, CompileError> {
     println!("{:?}", mir.tree);
 
     check_return_types(&mir)?;
+    check_assignment_types(&mir)?;
     mark_recursive_funcs(&mut mir)?;
 
     let ir = generate_ir(&mir)?;
