@@ -232,22 +232,17 @@ fn check_return_types(mir: &Mir) -> Result<(), CompileError> {
                             })
                         }
                     };
-                    match ret_expr_type {
-                        Some(ret_type) => {
-                            if ret_type != ret_var.var_type {
-                                return Err(CompileError::MismatchedReturnType {
-                                    func_name: name.to_string(),
-                                    expected: ret_var.var_type,
-                                    received: ret_type,
-                                    context: mir
-                                        .tree
-                                        .get_node(mir.tree.get_first_child(ret_node)?)?
-                                        .context
-                                        .clone(),
-                                });
-                            }
-                        }
-                        None => unreachable!("A return type of None should have been caught by the compiler in get_expression_type"),
+                    if ret_expr_type != ret_var.var_type {
+                        return Err(CompileError::MismatchedReturnType {
+                            func_name: name.to_string(),
+                            expected: ret_var.var_type,
+                            received: ret_expr_type,
+                            context: mir
+                                .tree
+                                .get_node(mir.tree.get_first_child(ret_node)?)?
+                                .context
+                                .clone(),
+                        });
                     }
                 }
             }
@@ -325,15 +320,15 @@ fn is_return_reached(mir: &Mir, block_node: NodeId) -> Result<bool, CompileError
     Ok(false)
 }
 
-fn get_expression_type(mir: &Mir, expr_node: NodeId) -> Result<Option<VarType>, CompileError> {
+fn get_expression_type(mir: &Mir, expr_node: NodeId) -> Result<VarType, CompileError> {
     match &mir.tree.get_node(expr_node)?.node_type {
-        MIRNodeType::VarIdentifier { var } => Ok(Some(var.var_type)),
+        MIRNodeType::VarIdentifier { var } => Ok(var.var_type),
         MIRNodeType::Addition
         | MIRNodeType::Subtraction
         | MIRNodeType::Multiplication
         | MIRNodeType::Division
         | MIRNodeType::Modulo => get_expression_type(mir, mir.tree.get_first_child(expr_node)?),
-        MIRNodeType::NumberLiteral { value: _ } => Ok(Some(VarType::Int)),
+        MIRNodeType::NumberLiteral { value: _ } => Ok(VarType::Int),
         MIRNodeType::FunctionCall { id } => {
             let MIRNodeType::Function {
                 name: _,
@@ -349,7 +344,7 @@ fn get_expression_type(mir: &Mir, expr_node: NodeId) -> Result<Option<VarType>, 
             };
             // Ok(return_var.as_ref().map(|var| var.var_type))
             match return_var {
-                Some(var) => Ok(Some(var.var_type)),
+                Some(var) => Ok(var.var_type),
                 None => Err(CompileError::UsingVoidReturn {
                     func_name: id.to_string(),
                     context: mir.tree.get_node(expr_node)?.context.clone(),
