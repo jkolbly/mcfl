@@ -355,6 +355,7 @@ fn get_expression_type(mir: &Mir, expr_node: NodeId) -> Result<VarType, CompileE
     }
 }
 
+/// Check that all assignments match the type of what they are assigning to
 fn check_assignment_types(mir: &Mir) -> Result<(), CompileError> {
     // Maps expected expression nodes to the variable being assigned
     let mut assignments: HashMap<NodeId, Variable> = HashMap::new();
