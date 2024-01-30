@@ -18,7 +18,7 @@ int_type = { "int" }
 
 block = { "{" ~ statement* ~ "}" }
 
-statement = _{ (assignment | variable_declaration | return_statement) ~ ";" }
+statement = _{ (assignment | variable_declaration | return_statement | function_call) ~ ";" }
 
 return_statement = { return_keyword ~ expression? }
 return_keyword = _{ "return" }
