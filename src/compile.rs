@@ -611,7 +611,6 @@ pub fn compile(ast: &Tree<ASTNode>) -> Result<IR, CompileError> {
     check_return_types(&mir)?;
     check_assignment_types(&mir)?;
     mark_recursive_funcs(&mut mir)?;
-    todo!("Check that parameter lists match");
     todo!("Check that there are no duplicate param names");
 
     let ir = generate_ir(&mir)?;
