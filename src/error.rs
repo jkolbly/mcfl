@@ -71,6 +71,12 @@ pub enum CompileError {
         func_name: String,
         context: StringContext,
     },
+    MismatchedAssignmentType {
+        var_id: String,
+        expected: VarType,
+        received: VarType,
+        context: StringContext,
+    },
 }
 
 impl std::fmt::Debug for CompileError {
@@ -161,6 +167,15 @@ impl std::fmt::Debug for CompileError {
                     func_name
                 ),
             ),
+            Self::MismatchedAssignmentType { var_id, expected, received, context } => include_pos(
+                context,
+                &format!(
+                    "Cannot assign value of type {} to variable {} with type {}",
+                    received,
+                    expected,
+                    var_id
+                )
+            )
         }
     }
 }
