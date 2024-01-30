@@ -554,6 +554,7 @@ fn mark_recursive_funcs_helper(
 ) -> Result<(), CompileError> {
     // If we already know this function isn't recursive, skip it
     if known_nonrecursive.contains(&func_node) {
+        callstack.pop();
         return Ok(());
     }
 
@@ -574,13 +575,17 @@ fn mark_recursive_funcs_helper(
     callstack.push(func_node);
 
     for call in func_calls.get(&func_node).unwrap() {
-        mark_recursive_funcs_helper(
-            func_calls,
-            *call,
-            callstack,
-            known_recursive,
-            known_nonrecursive,
-        )?;
+        if known_recursive.contains(call) {
+            known_recursive.insert(func_node);
+        } else {
+            mark_recursive_funcs_helper(
+                func_calls,
+                *call,
+                callstack,
+                known_recursive,
+                known_nonrecursive,
+            )?;
+        }
     }
 
     if !known_recursive.contains(&func_node) {
@@ -606,6 +611,8 @@ pub fn compile(ast: &Tree<ASTNode>) -> Result<IR, CompileError> {
     check_return_types(&mir)?;
     check_assignment_types(&mir)?;
     mark_recursive_funcs(&mut mir)?;
+    todo!("Check that parameter lists match");
+    todo!("Check that there are no duplicate param names");
 
     let ir = generate_ir(&mir)?;
 
