@@ -49,6 +49,14 @@ pub enum CompileError {
         received: usize,
         context: StringContext,
     },
+    MismatchedParamType {
+        func_name: String,
+        expected: VarType,
+        received: VarType,
+        arg_index: usize,
+        arg_name: String,
+        context: StringContext,
+    },
     MismatchedReturnType {
         func_name: String,
         expected: VarType,
@@ -126,6 +134,24 @@ impl std::fmt::Debug for CompileError {
                     "Function {} takes {} arguments but {} were given",
                     func_name, expected, received
                 ),
+            ),
+            Self::MismatchedParamType {
+                func_name,
+                expected,
+                received,
+                arg_index,
+                arg_name,
+                context
+            } => include_pos(
+                context,
+                &format!(
+                    "Argument {} at index {} to function {} is of type {} but was given {}", 
+                    arg_name,
+                    arg_index,
+                    func_name,
+                    expected,
+                    received
+                )
             ),
             Self::MismatchedReturnType {
                 func_name,
