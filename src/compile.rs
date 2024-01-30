@@ -393,6 +393,73 @@ fn check_assignment_types(mir: &Mir) -> Result<(), CompileError> {
     Ok(())
 }
 
+/// Check that all function calls match an existing function name and have the correct arguments.
+fn check_function_calls(mir: &Mir) -> Result<(), CompileError> {
+    // Get all function calls anywhere in the program
+    let func_calls = mir
+        .tree
+        .find_children_recursive(mir.tree.get_root()?, &|_, node| {
+            matches!(&node.node_type, MIRNodeType::FunctionCall { id: _ })
+        })?;
+
+    for call in func_calls {
+        let MIRNodeType::FunctionCall { id: func_id } = &mir.tree.get_node(call)?.node_type else {
+            unreachable!("func_calls should only contain MIRNodeType::FunctionCall (in check_function_parameters)");
+        };
+
+        let func_node =
+            *mir.func_table
+                .get(func_id)
+                .ok_or_else(|| match mir.tree.get_node(call) {
+                    Ok(node) => CompileError::UnknownFunction {
+                        name: func_id.to_string(),
+                        context: node.context.clone(),
+                    },
+                    Err(err) => err.into(),
+                })?;
+
+        let MIRNodeType::Function {
+            name,
+            params,
+            return_var: _,
+            is_recursive: _,
+        } = &mir.tree.get_node(func_node)?.node_type
+        else {
+            unreachable!();
+        };
+
+        let supplied_args = mir.tree.get_children(call)?;
+        if params.len() != supplied_args.len() {
+            return Err(CompileError::MismatchedParamCount {
+                func_name: name.to_string(),
+                expected: params.len(),
+                received: supplied_args.len(),
+                context: mir.tree.get_node(call)?.context.clone(),
+            });
+        }
+
+        for i_arg in 0..params.len() {
+            let supplied_arg = supplied_args[i_arg];
+            let supplied_type = get_expression_type(mir, supplied_arg)?;
+
+            let expected = &params[i_arg];
+
+            if supplied_type != expected.var_type {
+                return Err(CompileError::MismatchedParamType {
+                    func_name: name.to_string(),
+                    expected: expected.var_type,
+                    received: supplied_type,
+                    arg_index: i_arg,
+                    arg_name: expected.name.to_string(),
+                    context: mir.tree.get_node(supplied_arg)?.context.clone(),
+                });
+            }
+        }
+    }
+
+    Ok(())
+}
+
 /// Mark all recursive functions in a MIR tree as recursive.
 fn mark_recursive_funcs(mir: &mut Mir) -> Result<(), CompileError> {
     // Maps function nodes to a list of all functions called by that function
@@ -535,6 +602,7 @@ pub fn compile(ast: &Tree<ASTNode>) -> Result<IR, CompileError> {
 
     println!("{:?}", mir.tree);
 
+    check_function_calls(&mir)?;
     check_return_types(&mir)?;
     check_assignment_types(&mir)?;
     mark_recursive_funcs(&mut mir)?;
