@@ -393,6 +393,31 @@ fn check_assignment_types(mir: &Mir) -> Result<(), CompileError> {
     Ok(())
 }
 
+fn check_param_duplicates(mir: &Mir) -> Result<(), CompileError> {
+    for func_node in mir.func_table.values() {
+        if let MIRNodeType::Function {
+            name,
+            params,
+            return_var: _,
+            is_recursive: _,
+        } = &mir.tree.get_node(*func_node)?.node_type
+        {
+            let mut param_names = Vec::new();
+            for param in params {
+                if param_names.contains(&&param.name) {
+                    return Err(CompileError::DuplicateParamName {
+                        func_name: name.to_string(),
+                        param_name: param.name.to_string(),
+                        context: mir.tree.get_node(*func_node)?.context.clone(),
+                    });
+                }
+                param_names.push(&param.name);
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Check that all function calls match an existing function name and have the correct arguments.
 fn check_function_calls(mir: &Mir) -> Result<(), CompileError> {
     // Get all function calls anywhere in the program
@@ -607,11 +632,11 @@ pub fn compile(ast: &Tree<ASTNode>) -> Result<IR, CompileError> {
 
     println!("{:?}", mir.tree);
 
+    check_param_duplicates(&mir)?;
     check_function_calls(&mir)?;
     check_return_types(&mir)?;
     check_assignment_types(&mir)?;
     mark_recursive_funcs(&mut mir)?;
-    todo!("Check that there are no duplicate param names");
 
     let ir = generate_ir(&mir)?;
 
