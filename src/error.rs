@@ -85,6 +85,11 @@ pub enum CompileError {
         received: VarType,
         context: StringContext,
     },
+    DuplicateParamName {
+        func_name: String,
+        param_name: String,
+        context: StringContext,
+    },
 }
 
 impl std::fmt::Debug for CompileError {
@@ -200,6 +205,14 @@ impl std::fmt::Debug for CompileError {
                     received,
                     expected,
                     var_id
+                )
+            ),
+            Self::DuplicateParamName { func_name, param_name, context } => include_pos(
+                context,
+                &format!(
+                    "Function {} has multiple parameters named {}",
+                    func_name,
+                    param_name
                 )
             )
         }
