@@ -620,7 +620,31 @@ fn mark_recursive_funcs_helper(
     Ok(())
 }
 
+/// Generate an IR from a MIR.
 fn generate_ir(mir: &Mir) -> Result<IR, CompileError> {
+    let mut to_compile: Vec<NodeId> = mir.func_table.values().cloned().collect();
+    let mut compiled: Vec<NodeId> = Vec::new();
+
+    let mut ir = IR::new();
+
+    while let Some(block) = to_compile.pop() {
+        compiled.push(block);
+
+        let new_to_compile = compile_ir_func(&mut ir, mir, block)?;
+
+        for new_block in new_to_compile {
+            if !compiled.contains(&new_block) && !to_compile.contains(&new_block) {
+                to_compile.push(new_block);
+            }
+        }
+    }
+
+    Ok(ir)
+}
+
+/// Compile a single IR function from a block in the MIR.
+/// Returns a list of blocks that also need to be compiled (though they may already be compiled).
+fn compile_ir_func(ir: &mut IR, mir: &Mir, block: NodeId) -> Result<Vec<NodeId>, CompileError> {
     todo!()
 }
 
