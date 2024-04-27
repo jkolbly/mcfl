@@ -12,6 +12,9 @@ pub struct IR {
     ///
     /// Note that not all functions appear in the MCFL source (ex. loops). These will have a randomly generated name.
     functions: HashMap<String, IRFunc>,
+
+    /// Maps the variables in the MIR to the variables in the IR.
+    mir_vars: HashMap<Variable, String>,
 }
 
 impl IR {
@@ -19,6 +22,7 @@ impl IR {
     pub fn new() -> IR {
         IR {
             functions: HashMap::new(),
+            mir_vars: HashMap::new(),
         }
     }
 
