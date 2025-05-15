@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use rand::distributions::{Alphanumeric, DistString};
 
 use crate::{
-    ast::{ASTNode, ASTNodeType, VarType}, datapack::DataPack, error::CompileError, mir::{MIRNode, MIRNodeType, Mir, Variable}, tree::{NodeId, Tree}
+    ast::{ASTNode, ASTNodeType, VarType}, datapack::DataPack, error::CompileError, tree::{NodeId, Tree}
 };
 
 lazy_static::lazy_static! {

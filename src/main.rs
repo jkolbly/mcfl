@@ -18,7 +18,6 @@ mod datapack;
 mod error;
 mod id_tracker;
 mod mcfunction;
-mod mir;
 mod parse;
 mod tree;
 
