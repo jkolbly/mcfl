@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use rand::distributions::{Alphanumeric, DistString};
 
 use crate::{
-    ast::{ASTNode, ASTNodeType, VarType}, datapack::DataPack, error::CompileError, tree::{NodeId, Tree}
+    ast::{ASTNode, ASTNodeType, VarType, AST}, datapack::DataPack, error::CompileError, tree::{NodeId, Tree}
 };
 
 lazy_static::lazy_static! {
@@ -22,7 +22,7 @@ fn random_name() -> String {
 }
 
 /// Generate a datapack from an AST (abstract syntax tree)
-pub fn compile(ast: &Tree<ASTNode>) -> Result<DataPack, CompileError> {
+pub fn compile(ast: &AST) -> Result<DataPack, CompileError> {
     println!("{:?}", ast);
 
     todo!()

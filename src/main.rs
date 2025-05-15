@@ -1,6 +1,7 @@
 use core::panic;
 use std::{fs::File, io::Read, path::Path};
 
+use ast::AST;
 use compile::compile;
 use datapack::DataPack;
 use error::CompileError;
@@ -49,7 +50,7 @@ fn compile_file(file_path: &str) -> Result<DataPack, CompileError> {
 }
 
 fn compile_string(toparse: &str) -> Result<DataPack, CompileError> {
-    let parsed = parse(toparse)?;
+    let parsed = AST::new(parse(toparse)?);
     let compiled = compile(&parsed)?;
     Ok(compiled)
 }

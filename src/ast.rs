@@ -1,7 +1,39 @@
 use std::fmt::{Debug, Display};
 
-use crate::parse::Rule;
+use crate::{parse::Rule, tree::Tree};
 use pest::iterators::Pair;
+
+pub struct AST {
+    pub tree: Tree<ASTNode>,
+    pub variables: Vec<Variable>,
+}
+
+impl AST {
+    pub fn new(tree: Tree<ASTNode>) -> AST {
+        AST { tree, variables: Vec::new() }
+    }
+}
+
+impl Debug for AST {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:?}", self.tree))?;
+        write!(f, "")
+    }
+}
+
+pub struct Variable {
+    pub mcfl_name: String,
+    pub location: VarLoc,
+}
+
+pub enum VarLoc {
+    /// A variable whose location is known at compile time.
+    Named { name: String },
+
+    /// A variable stored on the stack.
+    /// These variables are still referenced by name within a stackframe.
+    Stack { stack_ref: String },
+}
 
 pub struct ASTNode {
     pub node_type: ASTNodeType,
