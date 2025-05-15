@@ -21,8 +21,39 @@ fn random_name() -> String {
     name
 }
 
+/// Fill the symbol tables for an AST
+fn name_analysis(ast: &mut AST) -> Result<(), CompileError> {
+    ast.variables = Vec::new();
+
+    fn analyze(ast: &mut AST, node: NodeId) -> Result<(), CompileError> {
+        match &ast.tree.get_node(node)?.node_type {
+            ASTNodeType::Program => todo!(),
+            ASTNodeType::Function { name, params, return_type } => todo!(),
+            ASTNodeType::MCFunction { name } => todo!(),
+            ASTNodeType::Block => todo!(),
+            ASTNodeType::VariableDeclaration { declaration } => todo!(),
+            ASTNodeType::Assignment => todo!(),
+            ASTNodeType::Identifier { id } => todo!(),
+            ASTNodeType::NumberLiteral { value } => todo!(),
+            ASTNodeType::Add => todo!(),
+            ASTNodeType::Subtract => todo!(),
+            ASTNodeType::Multiply => todo!(),
+            ASTNodeType::Divide => todo!(),
+            ASTNodeType::Modulo => todo!(),
+            ASTNodeType::ReturnStatement => todo!(),
+            ASTNodeType::FunctionCall { id } => todo!(),
+        }
+
+        Ok(())
+    }
+
+    analyze(ast, ast.tree.get_root()?)
+}
+
 /// Generate a datapack from an AST (abstract syntax tree)
-pub fn compile(ast: &AST) -> Result<DataPack, CompileError> {
+pub fn compile(mut ast: AST) -> Result<DataPack, CompileError> {
+    name_analysis(&mut ast)?;
+
     println!("{:?}", ast);
 
     todo!()

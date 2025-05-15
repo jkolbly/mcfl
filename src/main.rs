@@ -51,6 +51,6 @@ fn compile_file(file_path: &str) -> Result<DataPack, CompileError> {
 
 fn compile_string(toparse: &str) -> Result<DataPack, CompileError> {
     let parsed = AST::new(parse(toparse)?);
-    let compiled = compile(&parsed)?;
+    let compiled = compile(parsed)?;
     Ok(compiled)
 }
