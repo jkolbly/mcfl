@@ -17,7 +17,6 @@ mod compile;
 mod datapack;
 mod error;
 mod id_tracker;
-mod ir;
 mod mcfunction;
 mod mir;
 mod parse;
@@ -53,5 +52,5 @@ fn compile_file(file_path: &str) -> Result<DataPack, CompileError> {
 fn compile_string(toparse: &str) -> Result<DataPack, CompileError> {
     let parsed = parse(toparse)?;
     let compiled = compile(&parsed)?;
-    Ok(DataPack::from(compiled))
+    Ok(compiled)
 }
